@@ -35,8 +35,6 @@ export const Staking: React.FC<StakingProps> = ({ connectedAccount, setAppMessag
         }
         try {
             const account = connectedAccount as Address;
-            
-            // Replaced multicall with individual calls for better robustness and error handling.
             const [
                 gaiaBalance,
                 stakedBalance,
@@ -93,12 +91,21 @@ export const Staking: React.FC<StakingProps> = ({ connectedAccount, setAppMessag
                     throw new Error("Insufficient GAIA balance.");
                 }
                 const allowance = await publicClient.readContract({ address: gaiaTokenContractAddress, abi: gaiaTokenContractAbi, functionName: 'allowance', args: [account, stakingContractAddress], authorizationList: undefined });
+                console.log('Current allowance:', allowance.toString());
+                console.log('Amount to stake:', amountWei.toString());
+                
                 if (allowance < amountWei) {
                     setAppMessage({type: 'success', text: 'Please approve the staking contract to spend your GAIA...'})
                     const { request } = await publicClient.simulateContract({ account, address: gaiaTokenContractAddress, abi: gaiaTokenContractAbi, functionName: 'approve', args: [stakingContractAddress, maxInt256] });
                     const hash = await walletClient.writeContract(request);
                     await publicClient.waitForTransactionReceipt({ hash });
+                    setAppMessage({type: 'success', text: 'Approval successful. Now staking...'})
                 }
+                const finalAllowance = await publicClient.readContract({ address: gaiaTokenContractAddress, abi: gaiaTokenContractAbi, functionName: 'allowance', args: [account, stakingContractAddress], authorizationList: undefined });
+                if (finalAllowance < amountWei) {
+                    throw new Error(`Insufficient allowance. Required: ${amountWei.toString()}, Available: ${finalAllowance.toString()}`);
+                }
+                
                 const { request } = await publicClient.simulateContract({ account, address: stakingContractAddress, abi: stakingContractAbi, functionName: 'stake', args: [amountWei] });
                 const hash = await walletClient.writeContract(request);
                 await publicClient.waitForTransactionReceipt({ hash });
@@ -115,7 +122,16 @@ export const Staking: React.FC<StakingProps> = ({ connectedAccount, setAppMessag
             setAmount('');
             fetchData();
         } catch (error: any) {
-            const message = error.shortMessage || error.message;
+            console.error('Staking error:', error);
+            let message = error.shortMessage || error.message;
+            if (message.includes('0xfb8f41b2')) {
+                message = 'Stake function reverted. This usually means insufficient allowance or balance. Please check your GAIA balance and try approving the staking contract again.';
+            } else if (message.includes('transferFrom')) {
+                message = 'Token transfer failed. Please ensure you have sufficient GAIA balance and the staking contract has permission to spend your tokens.';
+            } else if (message.includes('allowance')) {
+                message = 'Insufficient allowance. Please approve the staking contract to spend your GAIA tokens.';
+            }
+            
             setAppMessage({ type: 'error', text: `Transaction failed: ${message}` });
         } finally {
             setIsSubmitting(false);
