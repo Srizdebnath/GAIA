@@ -5,7 +5,7 @@
 
 ---
 
-![Project GAIA Screenshot](https://storage.googleapis.com/aistudio-hosting/project_screenshots/gaia-staking.png)
+![Project GAIA Screenshot](gaia.png)
 
 ## Table of Contents
 
