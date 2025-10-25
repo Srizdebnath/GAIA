@@ -5,13 +5,14 @@ import { ImpactAnalysis } from './components/ImpactAnalysis';
 import { Gallery } from './components/Gallery';
 import { Marketplace } from './components/Marketplace';
 import { MyImpact } from './components/MyImpact';
+import { Staking } from './components/Staking';
 
 import type { Project, ImpactToken, Listing } from './types';
 import { connectWallet } from './services/celoService';
 import { listToken, buyToken, validateMarketplaceConfig } from './services/marketplaceService';
 import { contractAddress as impactTokenContractAddress } from './contract';
 
-type View = 'register' | 'analyze' | 'gallery' | 'marketplace' | 'myimpact';
+type View = 'register' | 'analyze' | 'gallery' | 'marketplace' | 'myimpact' | 'staking';
 
 const App: React.FC = () => {
   const [view, setView] = React.useState<View>('register');
@@ -114,6 +115,8 @@ const App: React.FC = () => {
         return <Marketplace onBuyToken={handleBuyToken} connectedAccount={connectedAccount} />;
       case 'myimpact':
         return <MyImpact tokens={myTokens} onListToken={handleListToken} />;
+      case 'staking':
+        return <Staking connectedAccount={connectedAccount} setAppMessage={setAppMessage} />;
       case 'register':
       default:
         return <ProjectRegistration onSubmit={handleProjectSubmit} connectedAccount={connectedAccount} />;

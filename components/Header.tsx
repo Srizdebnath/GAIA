@@ -1,4 +1,3 @@
-
 import * as React from 'react';
 
 const CeloLogo: React.FC = () => (
@@ -8,7 +7,7 @@ const CeloLogo: React.FC = () => (
   </svg>
 );
 
-type View = 'register' | 'analyze' | 'gallery' | 'marketplace' | 'myimpact';
+type View = 'register' | 'analyze' | 'gallery' | 'marketplace' | 'myimpact' | 'staking';
 
 interface HeaderProps {
     activeView: View;
@@ -36,7 +35,8 @@ export const Header: React.FC<HeaderProps> = ({ activeView, onNavigate, connecte
             <a onClick={() => onNavigate('register')} className={getLinkClass('register')}>Register Project</a>
             <a onClick={() => onNavigate('gallery')} className={getLinkClass('gallery')}>Impact Gallery</a>
             <a onClick={() => onNavigate('marketplace')} className={getLinkClass('marketplace')}>Marketplace</a>
-             {connectedAccount && <a onClick={() => onNavigate('myimpact')} className={getLinkClass('myimpact')}>My Impact</a>}
+            <a onClick={() => onNavigate('staking')} className={getLinkClass('staking')}>Staking</a>
+            {connectedAccount && <a onClick={() => onNavigate('myimpact')} className={getLinkClass('myimpact')}>My Impact</a>}
           </nav>
           <button
             onClick={connectedAccount ? onDisconnectWallet : onConnectWallet}
@@ -51,10 +51,11 @@ export const Header: React.FC<HeaderProps> = ({ activeView, onNavigate, connecte
             {connectedAccount ? `Disconnect (...${connectedAccount.slice(-4)})` : 'Connect Wallet'}
           </button>
         </div>
-        <div className="md:hidden flex items-center justify-center space-x-6 py-2 border-t border-light-purple/10 text-sm">
+        <div className="md:hidden flex items-center justify-around space-x-2 py-2 border-t border-light-purple/10 text-sm">
             <a onClick={() => onNavigate('register')} className={getLinkClass('register')}>Register</a>
             <a onClick={() => onNavigate('gallery')} className={getLinkClass('gallery')}>Gallery</a>
             <a onClick={() => onNavigate('marketplace')} className={getLinkClass('marketplace')}>Market</a>
+            <a onClick={() => onNavigate('staking')} className={getLinkClass('staking')}>Staking</a>
             {connectedAccount && <a onClick={() => onNavigate('myimpact')} className={getLinkClass('myimpact')}>My Impact</a>}
         </div>
       </div>
