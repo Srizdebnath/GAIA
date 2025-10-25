@@ -8,9 +8,11 @@ const CeloLogo: React.FC = () => (
   </svg>
 );
 
+type View = 'register' | 'analyze' | 'gallery' | 'marketplace' | 'myimpact';
+
 interface HeaderProps {
-    activeView: 'register' | 'analyze' | 'gallery';
-    onNavigate: (view: 'register' | 'gallery') => void;
+    activeView: View;
+    onNavigate: (view: View) => void;
     connectedAccount: string | null;
     onConnectWallet: () => void;
     onDisconnectWallet: () => void;
@@ -18,8 +20,8 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({ activeView, onNavigate, connectedAccount, onConnectWallet, onDisconnectWallet }) => {
 
-  const getLinkClass = (view: 'register' | 'gallery') => {
-    return `cursor-pointer transition-colors duration-300 ${activeView === view ? 'text-celo-green font-semibold' : 'text-gray-400 hover:text-white'}`;
+  const getLinkClass = (view: View) => {
+    return `cursor-pointer transition-colors duration-300 px-2 py-1 rounded-md ${activeView === view ? 'text-celo-green font-semibold bg-light-purple/50' : 'text-gray-400 hover:text-white'}`;
   }
 
   return (
@@ -30,26 +32,30 @@ export const Header: React.FC<HeaderProps> = ({ activeView, onNavigate, connecte
             <CeloLogo />
             <span className="text-xl font-bold text-white">Project GAIA</span>
           </div>
-          <div className="hidden md:flex items-center space-x-6">
+          <nav className="hidden md:flex items-center space-x-4">
             <a onClick={() => onNavigate('register')} className={getLinkClass('register')}>Register Project</a>
             <a onClick={() => onNavigate('gallery')} className={getLinkClass('gallery')}>Impact Gallery</a>
-          </div>
+            <a onClick={() => onNavigate('marketplace')} className={getLinkClass('marketplace')}>Marketplace</a>
+             {connectedAccount && <a onClick={() => onNavigate('myimpact')} className={getLinkClass('myimpact')}>My Impact</a>}
+          </nav>
           <button
             onClick={connectedAccount ? onDisconnectWallet : onConnectWallet}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-300 ease-in-out border
             ${
               connectedAccount
                 ? 'bg-mid-purple hover:bg-light-purple/50 text-red-400 border-red-600/60 focus:ring-red-500'
-                : 'bg-light-purple hover:bg-opacity-80 text-white border-celo-green/50 focus:ring-celo-green'
+                : 'bg-celo-green hover:bg-opacity-90 text-dark-purple border-celo-green/50 focus:ring-celo-green'
             }
             focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-dark-purple`}
           >
             {connectedAccount ? `Disconnect (...${connectedAccount.slice(-4)})` : 'Connect Wallet'}
           </button>
         </div>
-        <div className="md:hidden flex items-center justify-center space-x-8 py-2 border-t border-light-purple/10">
+        <div className="md:hidden flex items-center justify-center space-x-6 py-2 border-t border-light-purple/10 text-sm">
             <a onClick={() => onNavigate('register')} className={getLinkClass('register')}>Register</a>
             <a onClick={() => onNavigate('gallery')} className={getLinkClass('gallery')}>Gallery</a>
+            <a onClick={() => onNavigate('marketplace')} className={getLinkClass('marketplace')}>Market</a>
+            {connectedAccount && <a onClick={() => onNavigate('myimpact')} className={getLinkClass('myimpact')}>My Impact</a>}
         </div>
       </div>
     </header>

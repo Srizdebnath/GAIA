@@ -59,7 +59,7 @@ export const ImpactAnalysis: React.FC<ImpactAnalysisProps> = ({ project, onMinti
             location: project.location,
             impactScore: analysisResult.score,
             analysis: analysisResult.analysis,
-            imageUrl: URL.createObjectURL(project.afterImage.file),
+            imageUrl: `data:${project.afterImage.file.type};base64,${project.afterImage.base64}`,
             transactionHash: transactionHash
         };
         setStatus('success');

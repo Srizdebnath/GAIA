@@ -4,23 +4,32 @@ import { Header } from './components/Header';
 import { ProjectRegistration } from './components/ProjectRegistration';
 import { ImpactAnalysis } from './components/ImpactAnalysis';
 import { Gallery } from './components/Gallery';
-import type { Project, ImpactToken } from './types';
-import { connectWallet } from './services/celoService';
+import { Marketplace } from './components/Marketplace';
+import { MyImpact } from './components/MyImpact';
 
-type View = 'register' | 'analyze' | 'gallery';
+import type { Project, ImpactToken, Listing } from './types';
+import { connectWallet } from './services/celoService';
+import { listToken, buyToken, cancelListing } from './services/marketplaceService';
+import { contractAddress as impactTokenContractAddress } from './contract';
+
+type View = 'register' | 'analyze' | 'gallery' | 'marketplace' | 'myimpact';
 
 const App: React.FC = () => {
   const [view, setView] = React.useState<View>('register');
   const [currentProject, setCurrentProject] = React.useState<Project | null>(null);
   const [mintedTokens, setMintedTokens] = React.useState<ImpactToken[]>([]);
+  const [myTokens, setMyTokens] = React.useState<ImpactToken[]>([]);
   const [connectedAccount, setConnectedAccount] = React.useState<string | null>(null);
   const [connectionError, setConnectionError] = React.useState<string | null>(null);
+  const [appMessage, setAppMessage] = React.useState<{type: 'success' | 'error', text: string} | null>(null);
+
 
   const handleConnectWallet = React.useCallback(async () => {
     try {
       setConnectionError(null);
       const account = await connectWallet();
       setConnectedAccount(account);
+      // TODO: In a real app, you would fetch the user's tokens from the blockchain here.
     } catch (error) {
       console.error(error);
       setConnectionError((error as Error).message || 'Failed to connect wallet.');
@@ -29,6 +38,7 @@ const App: React.FC = () => {
 
   const handleDisconnectWallet = React.useCallback(() => {
     setConnectedAccount(null);
+    setMyTokens([]);
     setConnectionError(null);
   }, []);
 
@@ -39,11 +49,47 @@ const App: React.FC = () => {
 
   const handleMintingComplete = React.useCallback((token: ImpactToken) => {
     setMintedTokens(prevTokens => [...prevTokens, token]);
+    setMyTokens(prevTokens => [...prevTokens, token]);
     setCurrentProject(null);
-    setView('gallery');
+    setView('myimpact');
+    setAppMessage({ type: 'success', text: 'Impact Token successfully minted!' });
   }, []);
 
+  const handleListToken = async (token: ImpactToken, price: string) => {
+    if (!connectedAccount) return;
+    try {
+      setAppMessage(null);
+      await listToken(impactTokenContractAddress, token.id, price, connectedAccount);
+      setMyTokens(myTokens.filter(t => t.id !== token.id));
+      setAppMessage({ type: 'success', text: `Token #${token.id} listed for sale successfully!` });
+    } catch (error) {
+      console.error(error);
+      setAppMessage({ type: 'error', text: (error as Error).message });
+    }
+  };
+
+  const handleBuyToken = async (listing: Listing) => {
+    if (!connectedAccount) return;
+    try {
+      setAppMessage(null);
+      await buyToken(listing, connectedAccount);
+      // This is a simplified state update. In a real app, you'd refetch listings and user's tokens.
+      const boughtToken: ImpactToken = {
+        ...listing.tokenData,
+        id: listing.tokenId,
+        transactionHash: '', // We don't have the original mint tx hash here
+      };
+      setMyTokens(prev => [...prev, boughtToken]);
+      setView('myimpact');
+      setAppMessage({ type: 'success', text: `Successfully purchased Token #${listing.tokenId}!` });
+    } catch (error) {
+      console.error(error);
+      setAppMessage({ type: 'error', text: (error as Error).message });
+    }
+  };
+
   const handleNavigate = React.useCallback((newView: View) => {
+    setAppMessage(null);
     if (newView === 'register') {
       setCurrentProject(null);
     }
@@ -56,6 +102,10 @@ const App: React.FC = () => {
         return currentProject && <ImpactAnalysis project={currentProject} onMintingComplete={handleMintingComplete} connectedAccount={connectedAccount} />;
       case 'gallery':
         return <Gallery tokens={mintedTokens} />;
+      case 'marketplace':
+        return <Marketplace onBuyToken={handleBuyToken} connectedAccount={connectedAccount} />;
+      case 'myimpact':
+        return <MyImpact tokens={myTokens} onListToken={handleListToken} />;
       case 'register':
       default:
         return <ProjectRegistration onSubmit={handleProjectSubmit} connectedAccount={connectedAccount} />;
@@ -78,9 +128,14 @@ const App: React.FC = () => {
         />
         <main className="container mx-auto px-4 py-8 md:py-12">
           {connectionError && (
-             <div className="max-w-3xl mx-auto bg-red-900/50 border border-red-500 text-red-300 px-4 py-3 rounded-lg relative mb-6" role="alert">
+             <div className="max-w-4xl mx-auto bg-red-900/50 border border-red-500 text-red-300 px-4 py-3 rounded-lg relative mb-6" role="alert">
                 <strong className="font-bold">Connection Error: </strong>
                 <span className="block sm:inline">{connectionError}</span>
+             </div>
+          )}
+          {appMessage && (
+             <div className={`max-w-4xl mx-auto ${appMessage.type === 'success' ? 'bg-celo-green/20 border-celo-green text-celo-green' : 'bg-red-900/50 border-red-500 text-red-300'} border px-4 py-3 rounded-lg relative mb-6`} role="alert">
+                <span className="block sm:inline">{appMessage.text}</span>
              </div>
           )}
           {renderContent()}

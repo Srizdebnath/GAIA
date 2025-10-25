@@ -1,4 +1,5 @@
-import { createWalletClient, custom, createPublicClient, http, defineChain, decodeEventLog, type Address } from 'viem';
+
+import { createWalletClient, custom, createPublicClient, http, defineChain, decodeEventLog, type Address, type WalletClient } from 'viem';
 import { contractAddress, contractAbi } from '../contract';
 import type { Project, AIAnalysisResult } from '../types';
 
@@ -41,12 +42,17 @@ export const celoSepoliaTestnet = defineChain({
   testnet: true,
 });
 
+let walletClientInstance: WalletClient | null = null;
 
-let walletClient: any;
-const publicClient = createPublicClient({
+export const publicClient = createPublicClient({
   chain: celoSepoliaTestnet,
   transport: http()
 });
+
+export const getWalletClient = (): WalletClient => {
+    if (!walletClientInstance) throw new Error("Wallet not connected. Please connect your wallet first.");
+    return walletClientInstance;
+}
 
 export const testNetworkConnection = async () => {
     try {
@@ -55,7 +61,7 @@ export const testNetworkConnection = async () => {
         return true;
     } catch (error) {
         console.error('Network connection test failed:', error);
-        throw new Error(`Network connection failed: ${error.message}`);
+        throw new Error(`Network connection failed: ${(error as Error).message}`);
     }
 };
 
@@ -63,26 +69,25 @@ export const connectWallet = async () => {
     if (typeof window.ethereum === 'undefined') {
         throw new Error('MetaMask or a compatible wallet is not installed.');
     }
-    
 
     await testNetworkConnection();
     
-    walletClient = createWalletClient({
+    walletClientInstance = createWalletClient({
         chain: celoSepoliaTestnet,
         transport: custom(window.ethereum)
     });
 
-    const [address] = await walletClient.requestAddresses();
+    const [address] = await walletClientInstance.requestAddresses();
 
-    const chainId = await walletClient.getChainId();
+    const chainId = await walletClientInstance.getChainId();
     if (chainId !== celoSepoliaTestnet.id) {
         try {
-            await walletClient.switchChain({ id: celoSepoliaTestnet.id });
+            await walletClientInstance.switchChain({ id: celoSepoliaTestnet.id });
         } catch (switchError) {
             if ((switchError as any).code === 4902) {
-                await walletClient.addChain({ chain: celoSepoliaTestnet });
+                await walletClientInstance.addChain({ chain: celoSepoliaTestnet });
             } else {
-                throw new Error(`Failed to switch to Celo Sepolia Testnet. Please add it to your wallet manually. Error: ${switchError.message}`);
+                throw new Error(`Failed to switch to Celo Sepolia Testnet. Please add it to your wallet manually. Error: ${(switchError as Error).message}`);
             }
         }
     }
@@ -90,6 +95,7 @@ export const connectWallet = async () => {
 };
 
 export const mintImpactToken = async (project: Project, analysis: AIAnalysisResult, recipientAddress: `0x${string}`) => {
+    const walletClient = getWalletClient();
     if (!walletClient) {
         throw new Error('Wallet not connected');
     }
@@ -98,27 +104,6 @@ export const mintImpactToken = async (project: Project, analysis: AIAnalysisResu
         await testNetworkConnection();
         
         console.log('Starting minting process...');
-        console.log('Contract address:', contractAddress);
-        console.log('Recipient address:', recipientAddress);
-
-        
-        const contractOwnerResult = await publicClient.call({
-            to: contractAddress,
-            data: '0x8da5cb5b' 
-        });
-        
-        
-        const contractOwnerData = contractOwnerResult?.data || '0x';
-        const ownerAddress = `0x${contractOwnerData.slice(-40)}` as `0x${string}`;
-        
-        console.log('Contract owner:', ownerAddress);
-        console.log('Connected account:', recipientAddress);
-        
-        
-        if (ownerAddress.toLowerCase() !== recipientAddress.toLowerCase()) {
-            throw new Error(`Only the contract owner can mint tokens. Contract owner: ${ownerAddress}, Connected account: ${recipientAddress}. Please connect with the contract owner's wallet.`);
-        }
-
         
         const metadata = {
             name: `${project.name} - GAIA Impact Token`,
@@ -127,34 +112,12 @@ export const mintImpactToken = async (project: Project, analysis: AIAnalysisResu
             attributes: [
                 { trait_type: "Impact Score", value: analysis.score },
                 { trait_type: "Location", value: project.location },
-                { trait_type: "AI Analysis", value: analysis.analysis.substring(0, 200) + "..." }, 
+                { trait_type: "AI Analysis", value: analysis.analysis }, 
             ]
         };
-
        
         const metadataJson = JSON.stringify(metadata);
-        const metadataSize = new Blob([metadataJson]).size;
-        
-        console.log('Metadata size:', metadataSize, 'bytes');
-        
-        let tokenUri: string;
-        if (metadataSize > 100000) { 
-            console.log('Metadata too large, using simplified version');
-            const simplifiedMetadata = {
-                name: `${project.name} - GAIA Impact Token`,
-                description: project.description.substring(0, 200) + "...",
-                image: "https://via.placeholder.com/400x400/4CAF50/FFFFFF?text=GAIA+Impact",
-                attributes: [
-                    { trait_type: "Impact Score", value: analysis.score },
-                    { trait_type: "Location", value: project.location },
-                    { trait_type: "AI Analysis", value: "Ecological impact analysis completed" },
-                ]
-            };
-            const simplifiedJson = JSON.stringify(simplifiedMetadata);
-            tokenUri = `data:application/json;base64,${btoa(simplifiedJson)}`;
-        } else {
-            tokenUri = `data:application/json;base64,${btoa(metadataJson)}`;
-        }
+        const tokenUri = `data:application/json;base64,${btoa(unescape(encodeURIComponent(metadataJson)))}`;
         
         console.log('Token URI created, length:', tokenUri.length);
         console.log('Simulating contract call...');
@@ -175,90 +138,27 @@ export const mintImpactToken = async (project: Project, analysis: AIAnalysisResu
         console.log('Transaction confirmed, receipt:', receipt);
 
         let tokenId = null;
-        console.log('Processing transaction logs...');
-        console.log('Total logs:', receipt.logs.length);
-        
-        for (let i = 0; i < receipt.logs.length; i++) {
-            const log = receipt.logs[i] as any; 
-            console.log(`Log ${i}:`, {
-                address: log.address,
-                topics: log.topics,
-                data: log.data
-            });
-            
+        for (const log of receipt.logs) {
             try {
-                if (log.address.toLowerCase() === contractAddress.toLowerCase()) {
-                    console.log('Found log from our contract, attempting to decode...');
-                    if (log.topics && log.topics.length >= 4) {
-                        const transferSignature = '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef';
-                        
-                        if (log.topics[0] === transferSignature) {
-                            console.log('Found Transfer event!');
-                            const fromAddress = `0x${log.topics[1].slice(-40)}`;
-                            const toAddress = `0x${log.topics[2].slice(-40)}`;
-                            const tokenIdHex = log.topics[3];
-                            const tokenIdBigInt = BigInt(tokenIdHex);
-                            
-                            console.log('Transfer details:', {
-                                from: fromAddress,
-                                to: toAddress,
-                                tokenId: tokenIdBigInt.toString()
-                            });
-                            if (toAddress.toLowerCase() === recipientAddress.toLowerCase()) {
-                                tokenId = tokenIdBigInt.toString();
-                                console.log('Found matching token ID:', tokenId);
-                                break;
-                            }
-                        }
-                    }
-                    try {
-                        const decodedLog = decodeEventLog({ 
-                            abi: contractAbi, 
-                            data: log.data,
-                            topics: log.topics || []
-                        });
-                        
-                        console.log('Decoded log:', decodedLog);
-                        
-                        if ((decodedLog as any).eventName === 'Transfer') {
-                            const args = decodedLog.args as any;
-                            if (args && args.to && args.tokenId) {
-                                console.log('Transfer args:', args);
-                                if (args.to.toLowerCase() === recipientAddress.toLowerCase()) {
-                                    tokenId = args.tokenId.toString();
-                                    console.log('Found token ID via ABI decode:', tokenId);
-                                    break;
-                                }
-                            }
-                        }
-                    } catch (abiError) {
-                        console.log('ABI decode failed:', abiError);
+                const decodedLog = decodeEventLog({
+                    abi: contractAbi,
+                    data: log.data,
+                    topics: log.topics,
+                });
+                if (decodedLog.eventName === 'Transfer') {
+                    const args = decodedLog.args as { from: Address, to: Address, tokenId: bigint };
+                    if (args.to.toLowerCase() === recipientAddress.toLowerCase()) {
+                        tokenId = args.tokenId.toString();
+                        break;
                     }
                 }
             } catch (e) {
-                console.log('Failed to process log:', e);
+                // Not a Transfer event from our contract, ignore.
             }
         }
+
         if (tokenId === null) {
-            console.log('Token ID not found in logs, trying alternative method...');
-            try {
-                const totalSupplyResult = await publicClient.call({
-                    to: contractAddress,
-                    data: '0x18160ddd'
-                });
-                
-                if (totalSupplyResult?.data) {
-                    const totalSupply = BigInt(totalSupplyResult.data);
-                    console.log('Total supply:', totalSupply.toString());
-                    
-                    if (totalSupply > 0n) {
-                        tokenId = (totalSupply - 1n).toString();
-                        console.log('Using calculated token ID:', tokenId);
-                    }
-                }
-            } catch (supplyError) {
-                console.log('Failed to get total supply:', supplyError);
-            }
+          throw new Error("Could not determine minted Token ID from transaction logs.");
         }
 
         console.log('Minting completed successfully. Token ID:', tokenId);
@@ -267,19 +167,20 @@ export const mintImpactToken = async (project: Project, analysis: AIAnalysisResu
             tokenId: tokenId
         };
         
-    } catch (error) {
+    } catch (error: any) {
         console.error('Minting failed with detailed error:', error);
         
         if (error.message.includes('HTTP request failed')) {
             throw new Error('Network connection failed. Please check your internet connection and try again. If the problem persists, the Celo network might be experiencing issues.');
         } else if (error.message.includes('insufficient funds')) {
             throw new Error('Insufficient CELO balance to cover transaction fees. Please add more CELO to your wallet.');
-        } else if (error.message.includes('user rejected')) {
+        } else if (error.message.includes('User rejected the request')) {
             throw new Error('Transaction was rejected by user.');
         } else if (error.message.includes('execution reverted')) {
+             if (error.message.includes("Ownable: caller is not the owner")) {
+                throw new Error("Minting failed: Only the contract owner can mint new tokens.");
+             }
             throw new Error('Smart contract execution failed. This might be due to contract issues or invalid parameters.');
-        } else if (error.message.includes('Only the contract owner')) {
-            throw error;
         } else {
             throw new Error(`Minting failed: ${error.message}`);
         }
