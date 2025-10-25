@@ -45,7 +45,7 @@ export const celoSepoliaTestnet = defineChain({
     },
   },
   testnet: true,
-}) as const;
+} as const);
 
 let walletClientInstance: WalletClient | null = null;
 
