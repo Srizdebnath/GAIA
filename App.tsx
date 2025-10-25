@@ -1,4 +1,3 @@
-
 import * as React from 'react';
 import { Header } from './components/Header';
 import { ProjectRegistration } from './components/ProjectRegistration';
@@ -9,9 +8,8 @@ import { MyImpact } from './components/MyImpact';
 
 import type { Project, ImpactToken, Listing } from './types';
 import { connectWallet } from './services/celoService';
-import { listToken, buyToken } from './services/marketplaceService';
+import { listToken, buyToken, validateMarketplaceConfig } from './services/marketplaceService';
 import { contractAddress as impactTokenContractAddress } from './contract';
-import { marketplaceContractAddress } from './marketplace';
 
 type View = 'register' | 'analyze' | 'gallery' | 'marketplace' | 'myimpact';
 
@@ -24,8 +22,8 @@ const App: React.FC = () => {
   const [connectionError, setConnectionError] = React.useState<string | null>(null);
   const [appMessage, setAppMessage] = React.useState<{type: 'success' | 'error', text: string} | null>(null);
 
-  const isMarketplaceConfigured = marketplaceContractAddress !== '0x0000000000000000000000000000000000000000';
-  const marketplaceNotConfiguredError = 'Marketplace is not configured. The developer needs to deploy the contract and update its address in the marketplace.ts file.';
+  const marketplaceConfig = validateMarketplaceConfig();
+  const marketplaceNotConfiguredError = marketplaceConfig.error || 'Marketplace is not configured. The developer needs to deploy the contract and update its address in the marketplace.ts file.';
 
   const handleConnectWallet = React.useCallback(async () => {
     try {
@@ -59,7 +57,7 @@ const App: React.FC = () => {
   }, []);
 
   const handleListToken = async (token: ImpactToken, price: string) => {
-    if (!isMarketplaceConfigured) {
+    if (!marketplaceConfig.isValid) {
       setAppMessage({ type: 'error', text: marketplaceNotConfiguredError });
       return;
     }
@@ -76,7 +74,7 @@ const App: React.FC = () => {
   };
 
   const handleBuyToken = async (listing: Listing) => {
-    if (!isMarketplaceConfigured) {
+    if (!marketplaceConfig.isValid) {
       setAppMessage({ type: 'error', text: marketplaceNotConfiguredError });
       return;
     }
