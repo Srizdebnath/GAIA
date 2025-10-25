@@ -9,6 +9,11 @@ declare global {
   }
 }
 
+// FIX: Add `as const` to the end of the chain definition to ensure
+// TypeScript infers the most specific types for the chain properties,
+// which is crucial for viem's type inference to work correctly.
+// This resolves both the "Type instantiation is excessively deep" error
+// and the downstream "authorizationList is missing" errors.
 export const celoSepoliaTestnet = defineChain({
   id: 11142220,
   name: 'Celo Sepolia Testnet',
@@ -40,7 +45,7 @@ export const celoSepoliaTestnet = defineChain({
     },
   },
   testnet: true,
-});
+}) as const;
 
 let walletClientInstance: WalletClient | null = null;
 

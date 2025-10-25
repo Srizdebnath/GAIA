@@ -43,7 +43,6 @@ export const checkMarketplaceContract = async (): Promise<{ isAccessible: boolea
             address: marketplaceContractAddress,
             abi: marketplaceContractAbi,
             functionName: 'getListingCount',
-            authorizationList: [],
         });
         
         return { isAccessible: true };
@@ -66,7 +65,6 @@ async function approveMarketplaceForAll(spender: Address, contract: Address, abi
             abi: abi,
             functionName: 'isApprovedForAll',
             args: [account, spender],
-            authorizationList: [],
         });
 
         if (isApproved) {
@@ -249,7 +247,6 @@ export const getActiveListings = async (): Promise<Listing[]> => {
             address: marketplaceContractAddress,
             abi: marketplaceContractAbi,
             functionName: 'getListingCount',
-            authorizationList: [],
         }) as bigint;
 
         if (listingCount === 0n) return [];
@@ -264,7 +261,6 @@ export const getActiveListings = async (): Promise<Listing[]> => {
                             abi: marketplaceContractAbi,
                             functionName: 'listings',
                             args: [i],
-                            authorizationList: [],
                         }) as readonly [bigint, `0x${string}`, bigint, `0x${string}`, bigint, boolean];
 
                         const isActive = listingResult[5];
@@ -278,7 +274,6 @@ export const getActiveListings = async (): Promise<Listing[]> => {
                             abi: impactTokenContractAbi,
                             functionName: 'tokenURI',
                             args: [BigInt(tokenId)],
-                            authorizationList: [],
                         }) as string;
 
                         // Decode base64 URI
