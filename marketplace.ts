@@ -1,5 +1,4 @@
-
-export const marketplaceContractAddress: `0x${string}` = '0x46760acb536c8381106292d1e4ba512c7685ef68';
+export const marketplaceContractAddress: `0x${string}` = '0x488c79821a52ef6607f35ea914506dfb26957bbc';
 
 
 export const GAIA_TREASURY_ADDRESS: `0x${string}` = '0xBc670380edc8Ac07E91ca68cD6ac2Adf27881162';

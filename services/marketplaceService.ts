@@ -5,7 +5,7 @@ import { contractAddress as impactTokenContractAddress, contractAbi as impactTok
 import type { Listing, TokenMetadata } from '../types';
 
 export const isMarketplaceConfigured = (): boolean => {
-    return marketplaceContractAddress !== '0x46760acb536c8381106292d1e4ba512c7685ef68';
+    return marketplaceContractAddress === '0x488c79821a52ef6607f35ea914506dfb26957bbc';
 };
 
 export const validateMarketplaceConfig = (): { isValid: boolean; error?: string } => {
@@ -53,7 +53,7 @@ authorizationList: undefined
     }
 };
 
-// FIX: Correctly type the `abi` parameter to avoid type inference issues.
+
 async function approveMarketplaceForAll(spender: Address, contract: Address, abi: typeof impactTokenContractAbi, account: Address) {
     try {
         const walletClient = getWalletClient();
@@ -133,6 +133,30 @@ export const listToken = async (nftContractAddress: Address, tokenId: string, pr
             throw new Error('Price must be greater than zero');
         }
 
+
+        console.log(`Checking ownership of token ${tokenId} for account ${account}`);
+        try {
+            const tokenOwner = await publicClient.readContract({
+                address: nftContractAddress,
+                abi: impactTokenContractAbi,
+                functionName: 'ownerOf',
+                args: [BigInt(tokenId)],
+                authorizationList: undefined
+            }) as Address;
+
+            console.log(`Token owner: ${tokenOwner}, Account: ${account}`);
+            if (tokenOwner.toLowerCase() !== account.toLowerCase()) {
+                throw new Error(`You are not the owner of this token. Token owner: ${tokenOwner}`);
+            }
+        } catch (ownershipError: any) {
+            console.error('Token ownership check failed:', ownershipError);
+            if (ownershipError.message?.includes('ERC721: invalid token ID') || 
+                ownershipError.message?.includes('ERC721: owner query for nonexistent token')) {
+                throw new Error(`Token #${tokenId} does not exist or is invalid`);
+            }
+            throw new Error(`Failed to verify token ownership: ${ownershipError.message}`);
+        }
+
         await approveMarketplaceForAll(marketplaceContractAddress, nftContractAddress, impactTokenContractAbi, account);
 
         console.log('Listing token...');
@@ -150,6 +174,11 @@ export const listToken = async (nftContractAddress: Address, tokenId: string, pr
     } catch (error: any) {
         console.error('Failed to list token:', error);
         const errorMessage = (error.shortMessage || error.message || '').toLowerCase();
+
+
+        if (errorMessage.includes('0x177e802f')) {
+            throw new Error('Token listing failed: The contract reverted with signature 0x177e802f. This usually means you are not the owner of the token or the token does not exist.');
+        }
 
         if (errorMessage.includes('you are not the owner')) {
             throw new Error('You are not the owner of this token');
