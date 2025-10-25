@@ -29,7 +29,7 @@ export const Header: React.FC<HeaderProps> = ({ activeView, onNavigate, connecte
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center space-x-4">
             <CeloLogo />
-            <span className="text-xl font-bold text-white">Project GAIA</span>
+            <span className="text-xl font-bold text-white">The Varidian Protocol</span>
           </div>
           <nav className="hidden md:flex items-center space-x-4">
             <a onClick={() => onNavigate('register')} className={getLinkClass('register')}>Register Project</a>

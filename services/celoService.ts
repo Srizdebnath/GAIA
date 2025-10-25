@@ -117,7 +117,7 @@ export const mintImpactToken = async (project: Project, analysis: AIAnalysisResu
             : project.description;
 
         const metadata = {
-            name: `${project.name} - GAIA Impact Token`,
+            name: `${project.name} - varidian Impact Token`,
             description: truncatedDescription,
             image: `data:${project.afterImage.mimeType};base64,${project.afterImage.base64}`,
             attributes: [

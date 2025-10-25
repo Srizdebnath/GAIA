@@ -5,11 +5,11 @@ import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.0.1/contr
 import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.0.1/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.0.1/contracts/access/Ownable.sol";
 
-contract GAIAImpact is ERC721, ERC721URIStorage, Ownable {
+contract varidianImpact is ERC721, ERC721URIStorage, Ownable {
     uint256 private _nextTokenId;
 
     constructor(address initialOwner)
-        ERC721("GAIA Impact Token", "GIMPACT")
+        ERC721("varidian Impact Token", "GIMPACT")
         Ownable(initialOwner)
     {}
 
@@ -40,4 +40,4 @@ contract GAIAImpact is ERC721, ERC721URIStorage, Ownable {
 }
 
 
-0x672d002aa80d0a90dca65ee788364be0381b9120
+0x2b530a13bc20d90a9d2d11225c872f38511912d5

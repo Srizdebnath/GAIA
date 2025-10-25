@@ -9,7 +9,7 @@ import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.0.1/contr
 contract Staking is Ownable, ReentrancyGuard {
     using Math for uint256;
 
-    IERC20 public immutable gaiaToken;
+    IERC20 public immutable varidianToken;
     IERC20 public immutable rewardToken;
 
     uint256 private _totalStaked;
@@ -27,8 +27,8 @@ contract Staking is Ownable, ReentrancyGuard {
     event RewardPaid(address indexed user, uint256 reward);
     event RewardsNotified(uint256 newRewardRate);
 
-    constructor(address _gaiaTokenAddress, address _rewardTokenAddress) Ownable(msg.sender) {
-        gaiaToken = IERC20(_gaiaTokenAddress);
+    constructor(address _varidianTokenAddress, address _rewardTokenAddress) Ownable(msg.sender) {
+        varidianToken = IERC20(_varidianTokenAddress);
         rewardToken = IERC20(_rewardTokenAddress);
     }
     
@@ -69,7 +69,7 @@ contract Staking is Ownable, ReentrancyGuard {
         require(amount > 0, "Cannot stake 0");
         _totalStaked += amount;
         _stakedBalances[msg.sender] += amount;
-        require(gaiaToken.transferFrom(msg.sender, address(this), amount), "GAIA transfer failed");
+        require(varidianToken.transferFrom(msg.sender, address(this), amount), "varidian transfer failed");
         emit Staked(msg.sender, amount);
     }
 
@@ -78,7 +78,7 @@ contract Staking is Ownable, ReentrancyGuard {
         require(_stakedBalances[msg.sender] >= amount, "Insufficient staked balance");
         _totalStaked -= amount;
         _stakedBalances[msg.sender] -= amount;
-        require(gaiaToken.transfer(msg.sender, amount), "GAIA transfer failed");
+        require(varidianToken.transfer(msg.sender, amount), "varidian transfer failed");
         emit Unstaked(msg.sender, amount);
     }
 
@@ -110,4 +110,4 @@ contract Staking is Ownable, ReentrancyGuard {
 }
 
 
-0x76e57c0e94bd0482f370c32694c578952b44a6b9
+0x8fffda79a30bc1115d625484a36bb1d407522a65

@@ -13,7 +13,7 @@ contract ImpactNFT is ERC721URIStorage, Ownable {
     uint256 private _nextTokenId;
 
     constructor(address initialOwner)
-        ERC721("GAIA Impact Token", "GAIA")
+        ERC721("varidian Impact Token", "varidian")
         Ownable(initialOwner)
     {}
 
@@ -30,6 +30,6 @@ contract ImpactNFT is ERC721URIStorage, Ownable {
 
 
 
-0xaf927c19863a595fc8ffb439c0624af224bb2e59
+0xd3b07a0b6cf6fd0854a0d039257bf67ccaa2da4a
 
 

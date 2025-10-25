@@ -5,7 +5,7 @@ import { contractAddress as impactTokenContractAddress, contractAbi as impactTok
 import type { Listing, TokenMetadata } from '../types';
 
 export const isMarketplaceConfigured = (): boolean => {
-    return marketplaceContractAddress === '0x488c79821a52ef6607f35ea914506dfb26957bbc';
+    return marketplaceContractAddress === '0x4a321e3190831a1639a5130ed5fd66155747b0c3';
 };
 
 export const validateMarketplaceConfig = (): { isValid: boolean; error?: string } => {
@@ -157,6 +157,33 @@ export const listToken = async (nftContractAddress: Address, tokenId: string, pr
             throw new Error(`Failed to verify token ownership: ${ownershipError.message}`);
         }
 
+       
+        try {
+            const tokenExists = await publicClient.readContract({
+                address: nftContractAddress,
+                abi: impactTokenContractAbi,
+                functionName: 'tokenURI',
+                args: [BigInt(tokenId)],
+                authorizationList: undefined
+            });
+            console.log(`Token URI exists: ${!!tokenExists}`);
+        } catch (uriError: any) {
+            console.error('Token URI check failed:', uriError);
+            throw new Error(`Token #${tokenId} metadata is not accessible`);
+        }
+        try {
+            const activeListings = await getActiveListings();
+            const isAlreadyListed = activeListings.some(listing => 
+                listing.nftAddress.toLowerCase() === nftContractAddress.toLowerCase() && 
+                listing.tokenId === tokenId
+            );
+            if (isAlreadyListed) {
+                throw new Error(`Token #${tokenId} is already listed in the marketplace`);
+            }
+        } catch (listingCheckError: any) {
+            console.warn('Could not check existing listings:', listingCheckError);
+        }
+
         await approveMarketplaceForAll(marketplaceContractAddress, nftContractAddress, impactTokenContractAbi, account);
 
         console.log('Listing token...');
@@ -175,9 +202,12 @@ export const listToken = async (nftContractAddress: Address, tokenId: string, pr
         console.error('Failed to list token:', error);
         const errorMessage = (error.shortMessage || error.message || '').toLowerCase();
 
-
         if (errorMessage.includes('0x177e802f')) {
-            throw new Error('Token listing failed: The contract reverted with signature 0x177e802f. This usually means you are not the owner of the token or the token does not exist.');
+            throw new Error(`Token listing failed: The contract reverted with signature 0x177e802f. This usually means you are not the owner of the token or the token does not exist. Please verify:
+1. You are the owner of token #${tokenId}
+2. The token exists and is not already listed
+3. You have approved the marketplace contract to transfer your token
+4. The token is not locked or staked elsewhere`);
         }
 
         if (errorMessage.includes('you are not the owner')) {
@@ -197,7 +227,6 @@ export const listToken = async (nftContractAddress: Address, tokenId: string, pr
 export const buyToken = async (listing: Listing, account: Address) => {
     try {
         const walletClient = getWalletClient();
-
 
         if (listing.seller.toLowerCase() === account.toLowerCase()) {
             throw new Error('You cannot buy your own listing');

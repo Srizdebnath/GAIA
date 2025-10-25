@@ -1,13 +1,13 @@
 import { cUSDContractAddress } from './marketplace';
-import { gaiaTokenContractAddress } from './gaiaToken';
+import { varidianTokenContractAddress } from './varidianToken';
 
-export const stakingContractAddress: `0x${string}` = '0x76e57c0e94bd0482f370c32694c578952b44a6b9';
+export const stakingContractAddress: `0x${string}` = '0x8fffda79a30bc1115d625484a36bb1d407522a65';
 
 // In a real scenario, this would be passed during deployment
-export const stakingConstructorArgs = [gaiaTokenContractAddress, cUSDContractAddress];
+export const stakingConstructorArgs = [varidianTokenContractAddress, cUSDContractAddress];
 
 export const stakingContractAbi = [
-    {"inputs":[{"internalType":"address","name":"_gaiaTokenAddress","type":"address"},{"internalType":"address","name":"_rewardTokenAddress","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},
+    {"inputs":[{"internalType":"address","name":"_varidianTokenAddress","type":"address"},{"internalType":"address","name":"_rewardTokenAddress","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},
     {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"previousOwner","type":"address"},{"indexed":true,"internalType":"address","name":"newOwner","type":"address"}],"name":"OwnershipTransferred","type":"event"},
     {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":false,"internalType":"uint256","name":"reward","type":"uint256"}],"name":"RewardPaid","type":"event"},
     {"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"newRewardRate","type":"uint256"}],"name":"RewardsNotified","type":"event"},
@@ -15,7 +15,7 @@ export const stakingContractAbi = [
     {"anonymous":false,"inputs":[{"indexed":true,"internalType":"address","name":"user","type":"address"},{"indexed":false,"internalType":"uint256","name":"amount","type":"uint256"}],"name":"Unstaked","type":"event"},
     {"inputs":[],"name":"claimReward","outputs":[],"stateMutability":"nonpayable","type":"function"},
     {"inputs":[{"internalType":"address","name":"account","type":"address"}],"name":"earned","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
-    {"inputs":[],"name":"gaiaToken","outputs":[{"internalType":"contract IERC20","name":"","type":"address"}],"stateMutability":"view","type":"function"},
+    {"inputs":[],"name":"varidianToken","outputs":[{"internalType":"contract IERC20","name":"","type":"address"}],"stateMutability":"view","type":"function"},
     {"inputs":[],"name":"lastApplicableTime","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
     {"inputs":[],"name":"lastRewardDistributionTime","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
     {"inputs":[{"internalType":"uint256","name":"reward","type":"uint256"}],"name":"notifyRewardAmount","outputs":[],"stateMutability":"nonpayable","type":"function"},
@@ -48,7 +48,7 @@ import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.0.1/contr
 contract Staking is Ownable, ReentrancyGuard {
     using Math for uint256;
 
-    IERC20 public immutable gaiaToken;
+    IERC20 public immutable varidianToken;
     IERC20 public immutable rewardToken;
 
     uint256 private _totalStaked;
@@ -66,8 +66,8 @@ contract Staking is Ownable, ReentrancyGuard {
     event RewardPaid(address indexed user, uint256 reward);
     event RewardsNotified(uint256 newRewardRate);
 
-    constructor(address _gaiaTokenAddress, address _rewardTokenAddress) Ownable(msg.sender) {
-        gaiaToken = IERC20(_gaiaTokenAddress);
+    constructor(address _varidianTokenAddress, address _rewardTokenAddress) Ownable(msg.sender) {
+        varidianToken = IERC20(_varidianTokenAddress);
         rewardToken = IERC20(_rewardTokenAddress);
     }
     
@@ -108,7 +108,7 @@ contract Staking is Ownable, ReentrancyGuard {
         require(amount > 0, "Cannot stake 0");
         _totalStaked += amount;
         _stakedBalances[msg.sender] += amount;
-        require(gaiaToken.transferFrom(msg.sender, address(this), amount), "GAIA transfer failed");
+        require(varidianToken.transferFrom(msg.sender, address(this), amount), "varidian transfer failed");
         emit Staked(msg.sender, amount);
     }
 
@@ -117,7 +117,7 @@ contract Staking is Ownable, ReentrancyGuard {
         require(_stakedBalances[msg.sender] >= amount, "Insufficient staked balance");
         _totalStaked -= amount;
         _stakedBalances[msg.sender] -= amount;
-        require(gaiaToken.transfer(msg.sender, amount), "GAIA transfer failed");
+        require(varidianToken.transfer(msg.sender, amount), "varidian transfer failed");
         emit Unstaked(msg.sender, amount);
     }
 

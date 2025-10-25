@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { Loader } from './Loader';
 import { getWalletClient, publicClient } from '../services/celoService';
-import { gaiaTokenContractAddress, gaiaTokenContractAbi } from '../gaiaToken';
+import { varidianTokenContractAddress, varidianTokenContractAbi } from '../varidianToken';
 import { stakingContractAddress, stakingContractAbi } from '../staking';
 import { formatUnits, parseUnits, maxInt256, type Address } from 'viem';
 
@@ -13,7 +13,7 @@ interface StakingProps {
 type StakingMode = 'stake' | 'unstake';
 
 interface StakingStats {
-    gaiaBalance: bigint;
+    varidianBalance: bigint;
     stakedBalance: bigint;
     earnedRewards: bigint;
     totalStaked: bigint;
@@ -36,21 +36,21 @@ export const Staking: React.FC<StakingProps> = ({ connectedAccount, setAppMessag
         try {
             const account = connectedAccount as Address;
             const [
-                gaiaBalance,
+                varidianBalance,
                 stakedBalance,
                 earnedRewards,
                 totalStaked,
                 owner
             ] = await Promise.all([
-                publicClient.readContract({ address: gaiaTokenContractAddress, abi: gaiaTokenContractAbi, functionName: 'balanceOf', args: [account], authorizationList: undefined }),
+                publicClient.readContract({ address: varidianTokenContractAddress, abi: varidianTokenContractAbi, functionName: 'balanceOf', args: [account], authorizationList: undefined }),
                 publicClient.readContract({ address: stakingContractAddress, abi: stakingContractAbi, functionName: 'stakedBalance', args: [account], authorizationList: undefined }),
                 publicClient.readContract({ address: stakingContractAddress, abi: stakingContractAbi, functionName: 'earned', args: [account], authorizationList: undefined }),
                 publicClient.readContract({ address: stakingContractAddress, abi: stakingContractAbi, functionName: 'totalStaked', authorizationList: undefined }),
-                publicClient.readContract({ address: gaiaTokenContractAddress, abi: gaiaTokenContractAbi, functionName: 'owner', authorizationList: undefined })
+                publicClient.readContract({ address: varidianTokenContractAddress, abi: varidianTokenContractAbi, functionName: 'owner', authorizationList: undefined })
             ]);
 
             setStats({
-                gaiaBalance: (gaiaBalance as bigint) ?? 0n,
+                varidianBalance: (varidianBalance as bigint) ?? 0n,
                 stakedBalance: (stakedBalance as bigint) ?? 0n,
                 earnedRewards: (earnedRewards as bigint) ?? 0n,
                 totalStaked: (totalStaked as bigint) ?? 0n,
@@ -87,21 +87,21 @@ export const Staking: React.FC<StakingProps> = ({ connectedAccount, setAppMessag
             const account = connectedAccount as Address;
 
             if (mode === 'stake') {
-                if (amountWei > stats.gaiaBalance) {
-                    throw new Error("Insufficient GAIA balance.");
+                if (amountWei > stats.varidianBalance) {
+                    throw new Error("Insufficient varidian balance.");
                 }
-                const allowance = await publicClient.readContract({ address: gaiaTokenContractAddress, abi: gaiaTokenContractAbi, functionName: 'allowance', args: [account, stakingContractAddress], authorizationList: undefined });
+                const allowance = await publicClient.readContract({ address: varidianTokenContractAddress, abi: varidianTokenContractAbi, functionName: 'allowance', args: [account, stakingContractAddress], authorizationList: undefined });
                 console.log('Current allowance:', allowance.toString());
                 console.log('Amount to stake:', amountWei.toString());
                 
                 if (allowance < amountWei) {
-                    setAppMessage({type: 'success', text: 'Please approve the staking contract to spend your GAIA...'})
-                    const { request } = await publicClient.simulateContract({ account, address: gaiaTokenContractAddress, abi: gaiaTokenContractAbi, functionName: 'approve', args: [stakingContractAddress, maxInt256] });
+                    setAppMessage({type: 'success', text: 'Please approve the staking contract to spend your varidian...'})
+                    const { request } = await publicClient.simulateContract({ account, address: varidianTokenContractAddress, abi: varidianTokenContractAbi, functionName: 'approve', args: [stakingContractAddress, maxInt256] });
                     const hash = await walletClient.writeContract(request);
                     await publicClient.waitForTransactionReceipt({ hash });
                     setAppMessage({type: 'success', text: 'Approval successful. Now staking...'})
                 }
-                const finalAllowance = await publicClient.readContract({ address: gaiaTokenContractAddress, abi: gaiaTokenContractAbi, functionName: 'allowance', args: [account, stakingContractAddress], authorizationList: undefined });
+                const finalAllowance = await publicClient.readContract({ address: varidianTokenContractAddress, abi: varidianTokenContractAbi, functionName: 'allowance', args: [account, stakingContractAddress], authorizationList: undefined });
                 if (finalAllowance < amountWei) {
                     throw new Error(`Insufficient allowance. Required: ${amountWei.toString()}, Available: ${finalAllowance.toString()}`);
                 }
@@ -109,7 +109,7 @@ export const Staking: React.FC<StakingProps> = ({ connectedAccount, setAppMessag
                 const { request } = await publicClient.simulateContract({ account, address: stakingContractAddress, abi: stakingContractAbi, functionName: 'stake', args: [amountWei] });
                 const hash = await walletClient.writeContract(request);
                 await publicClient.waitForTransactionReceipt({ hash });
-                setAppMessage({ type: 'success', text: 'Successfully staked GAIA!' });
+                setAppMessage({ type: 'success', text: 'Successfully staked varidian!' });
             } else { // unstake
                 if (amountWei > stats.stakedBalance) {
                     throw new Error("Insufficient staked balance.");
@@ -117,7 +117,7 @@ export const Staking: React.FC<StakingProps> = ({ connectedAccount, setAppMessag
                 const { request } = await publicClient.simulateContract({ account, address: stakingContractAddress, abi: stakingContractAbi, functionName: 'unstake', args: [amountWei] });
                 const hash = await walletClient.writeContract(request);
                 await publicClient.waitForTransactionReceipt({ hash });
-                setAppMessage({ type: 'success', text: 'Successfully unstaked GAIA!' });
+                setAppMessage({ type: 'success', text: 'Successfully unstaked varidian!' });
             }
             setAmount('');
             fetchData();
@@ -125,11 +125,11 @@ export const Staking: React.FC<StakingProps> = ({ connectedAccount, setAppMessag
             console.error('Staking error:', error);
             let message = error.shortMessage || error.message;
             if (message.includes('0xfb8f41b2')) {
-                message = 'Stake function reverted. This usually means insufficient allowance or balance. Please check your GAIA balance and try approving the staking contract again.';
+                message = 'Stake function reverted. This usually means insufficient allowance or balance. Please check your varidian balance and try approving the staking contract again.';
             } else if (message.includes('transferFrom')) {
-                message = 'Token transfer failed. Please ensure you have sufficient GAIA balance and the staking contract has permission to spend your tokens.';
+                message = 'Token transfer failed. Please ensure you have sufficient varidian balance and the staking contract has permission to spend your tokens.';
             } else if (message.includes('allowance')) {
-                message = 'Insufficient allowance. Please approve the staking contract to spend your GAIA tokens.';
+                message = 'Insufficient allowance. Please approve the staking contract to spend your varidian tokens.';
             }
             
             setAppMessage({ type: 'error', text: `Transaction failed: ${message}` });
@@ -168,8 +168,8 @@ export const Staking: React.FC<StakingProps> = ({ connectedAccount, setAppMessag
 
             const { request } = await publicClient.simulateContract({
                 account,
-                address: gaiaTokenContractAddress,
-                abi: gaiaTokenContractAbi,
+                address: varidianTokenContractAddress,
+                abi: varidianTokenContractAbi,
                 functionName: 'mint',
                 args: [account, amountToMint]
             });
@@ -177,7 +177,7 @@ export const Staking: React.FC<StakingProps> = ({ connectedAccount, setAppMessag
             const hash = await walletClient.writeContract(request);
             await publicClient.waitForTransactionReceipt({ hash });
             
-            setAppMessage({ type: 'success', text: 'Successfully minted 1,000 GAIA!' });
+            setAppMessage({ type: 'success', text: 'Successfully minted 1,000 varidian!' });
             fetchData();
 
         } catch (error: any) {
@@ -202,7 +202,7 @@ export const Staking: React.FC<StakingProps> = ({ connectedAccount, setAppMessag
         return (
             <div className="text-center bg-mid-purple/50 p-12 rounded-lg max-w-2xl mx-auto">
               <h2 className="text-2xl font-semibold text-white">Connect Your Wallet</h2>
-              <p className="text-gray-400 mt-2">Please connect your wallet to view staking information and manage your GAIA tokens.</p>
+              <p className="text-gray-400 mt-2">Please connect your wallet to view staking information and manage your varidian tokens.</p>
             </div>
         );
     }
@@ -210,15 +210,15 @@ export const Staking: React.FC<StakingProps> = ({ connectedAccount, setAppMessag
     return (
         <div className="max-w-4xl mx-auto">
             <div className="text-center mb-10">
-                <h1 className="text-4xl md:text-5xl font-bold text-white">GAIA Governance & Staking</h1>
-                <p className="mt-4 text-lg text-gray-300">Stake your GAIA tokens to earn rewards and participate in future governance.</p>
+                <h1 className="text-4xl md:text-5xl font-bold text-white">varidian Governance & Staking</h1>
+                <p className="mt-4 text-lg text-gray-300">Stake your varidian tokens to earn rewards and participate in future governance.</p>
             </div>
 
             <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-                <StatCard title="Your GAIA Balance" value={stats ? parseFloat(formatUnits(stats.gaiaBalance, 18)).toFixed(2) : '0.00'} unit="GAIA" />
-                <StatCard title="Staked GAIA" value={stats ? parseFloat(formatUnits(stats.stakedBalance, 18)).toFixed(2) : '0.00'} unit="GAIA" />
+                <StatCard title="Your varidian Balance" value={stats ? parseFloat(formatUnits(stats.varidianBalance, 18)).toFixed(2) : '0.00'} unit="varidian" />
+                <StatCard title="Staked varidian" value={stats ? parseFloat(formatUnits(stats.stakedBalance, 18)).toFixed(2) : '0.00'} unit="varidian" />
                 <StatCard title="Claimable Rewards" value={stats ? parseFloat(formatUnits(stats.earnedRewards, 18)).toFixed(4) : '0.00'} unit="cUSD" />
-                <StatCard title="Total GAIA Staked" value={stats ? parseFloat(formatUnits(stats.totalStaked, 18)).toLocaleString() : '0'} unit="GAIA" />
+                <StatCard title="Total varidian Staked" value={stats ? parseFloat(formatUnits(stats.totalStaked, 18)).toLocaleString() : '0'} unit="varidian" />
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
@@ -239,14 +239,14 @@ export const Staking: React.FC<StakingProps> = ({ connectedAccount, setAppMessag
                                 placeholder="0.0"
                             />
                             <div className="absolute inset-y-0 right-0 flex items-center">
-                                <button onClick={() => setAmount(formatUnits(mode === 'stake' ? stats?.gaiaBalance ?? 0n : stats?.stakedBalance ?? 0n, 18))} className="px-3 text-sm text-celo-gold hover:text-white">MAX</button>
+                                <button onClick={() => setAmount(formatUnits(mode === 'stake' ? stats?.varidianBalance ?? 0n : stats?.stakedBalance ?? 0n, 18))} className="px-3 text-sm text-celo-gold hover:text-white">MAX</button>
                             </div>
                         </div>
                     </div>
                     <div className="mt-6">
                         <button onClick={handleAction} disabled={isSubmitting || !amount} className="w-full flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-base font-medium text-dark-purple bg-celo-green hover:bg-opacity-90 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors">
                             {isSubmitting && <Loader small />}
-                            {isSubmitting ? 'Processing...' : (mode === 'stake' ? 'Stake GAIA' : 'Unstake GAIA')}
+                            {isSubmitting ? 'Processing...' : (mode === 'stake' ? 'Stake varidian' : 'Unstake varidian')}
                         </button>
                     </div>
                 </div>
@@ -263,10 +263,10 @@ export const Staking: React.FC<StakingProps> = ({ connectedAccount, setAppMessag
             {isOwner && (
                 <div className="mt-8 bg-mid-purple/50 border border-light-purple/30 rounded-lg shadow-2xl p-6">
                     <h3 className="text-xl font-bold text-white mb-2">Owner Actions</h3>
-                    <p className="text-gray-400 mb-4">As the GAIA token contract owner, you can mint new tokens for testing purposes.</p>
+                    <p className="text-gray-400 mb-4">As the varidian token contract owner, you can mint new tokens for testing purposes.</p>
                     <button onClick={handleMint} disabled={isMinting} className="w-full max-w-xs flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-base font-medium text-dark-purple bg-celo-gold hover:bg-opacity-90 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors">
                         {isMinting && <Loader small />}
-                        {isMinting ? 'Minting...' : 'Mint 1,000 GAIA'}
+                        {isMinting ? 'Minting...' : 'Mint 1,000 varidian'}
                     </button>
                 </div>
             )}
