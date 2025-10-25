@@ -1,10 +1,8 @@
-
 import * as React from 'react';
 import type { Listing } from '../types';
-import { getActiveListings } from '../services/marketplaceService';
+import { getActiveListings, isMarketplaceConfigured } from '../services/marketplaceService';
 import { Loader } from './Loader';
 import { formatUnits } from 'viem';
-import { marketplaceContractAddress } from '../marketplace';
 
 interface MarketplaceProps {
   onBuyToken: (listing: Listing) => void;
@@ -48,12 +46,10 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ onBuyToken, connectedA
   const [listings, setListings] = React.useState<Listing[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
-  
-  const isMarketplaceConfigured = marketplaceContractAddress !== '0x0000000000000000000000000000000000000000';
 
   React.useEffect(() => {
     const fetchListings = async () => {
-      if (!isMarketplaceConfigured) {
+      if (!isMarketplaceConfigured()) {
         setError('The marketplace contract has not been configured. Please deploy the contract and update the address in `marketplace.ts`.');
         setIsLoading(false);
         return;
@@ -71,7 +67,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ onBuyToken, connectedA
       }
     };
     fetchListings();
-  }, [isMarketplaceConfigured]);
+  }, []);
 
   return (
     <div className="max-w-6xl mx-auto">

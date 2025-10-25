@@ -15,14 +15,14 @@ export const validateMarketplaceConfig = (): { isValid: boolean; error?: string 
             error: 'Marketplace contract address is not configured. Please deploy the contract and update the address in marketplace.ts'
         };
     }
-    
+
     if (marketplaceContractAddress.length !== 42 || !marketplaceContractAddress.startsWith('0x')) {
         return {
             isValid: false,
             error: 'Invalid marketplace contract address format'
         };
     }
-    
+
     return { isValid: true };
 };
 
@@ -37,12 +37,12 @@ export const checkMarketplaceContract = async (): Promise<{ isAccessible: boolea
         }
 
         await publicClient.readContract({
-            address: marketplaceContractAddress,
-            abi: marketplaceContractAbi,
-            functionName: 'getListingCount',
-            authorizationList: [],
-        });
-        
+address: marketplaceContractAddress,
+abi: marketplaceContractAbi,
+functionName: 'getListingCount',
+authorizationList: undefined
+});
+
         return { isAccessible: true };
     } catch (error: any) {
         console.error('Marketplace contract check failed:', error);
@@ -53,18 +53,19 @@ export const checkMarketplaceContract = async (): Promise<{ isAccessible: boolea
     }
 };
 
-async function approveMarketplaceForAll(spender: Address, contract: Address, abi: any, account: Address) {
+// FIX: Correctly type the `abi` parameter to avoid type inference issues.
+async function approveMarketplaceForAll(spender: Address, contract: Address, abi: typeof impactTokenContractAbi, account: Address) {
     try {
         const walletClient = getWalletClient();
         console.log(`Checking approval status for marketplace ${spender} on contract ${contract} for account ${account}`);
-        
+
         const isApproved = await publicClient.readContract({
-            address: contract,
-            abi: abi,
-            functionName: 'isApprovedForAll',
-            args: [account, spender],
-            authorizationList: [],
-        });
+address: contract,
+abi: abi,
+functionName: 'isApprovedForAll',
+args: [account,spender],
+authorizationList: undefined
+});
 
         if (isApproved) {
             console.log('Marketplace is already approved for all tokens.');
@@ -85,7 +86,7 @@ async function approveMarketplaceForAll(spender: Address, contract: Address, abi
     } catch (error: any) {
         console.error('Failed to approve marketplace:', error);
         const errorMessage = (error.shortMessage || error.message || '').toLowerCase();
-        
+
         if (errorMessage.includes('user rejected')) {
             throw new Error('Marketplace approval was rejected by the user');
         } else {
@@ -112,7 +113,7 @@ async function approveCUSD(spender: Address, account: Address, amount: bigint) {
     } catch (error: any) {
         console.error('Failed to approve cUSD:', error);
         const errorMessage = (error.shortMessage || error.message || '').toLowerCase();
-        
+
         if (errorMessage.includes('insufficient funds')) {
             throw new Error('Insufficient cUSD balance for approval');
         } else if (errorMessage.includes('user rejected')) {
@@ -149,7 +150,7 @@ export const listToken = async (nftContractAddress: Address, tokenId: string, pr
     } catch (error: any) {
         console.error('Failed to list token:', error);
         const errorMessage = (error.shortMessage || error.message || '').toLowerCase();
-        
+
         if (errorMessage.includes('you are not the owner')) {
             throw new Error('You are not the owner of this token');
         } else if (errorMessage.includes('contract not approved')) {
@@ -167,12 +168,12 @@ export const listToken = async (nftContractAddress: Address, tokenId: string, pr
 export const buyToken = async (listing: Listing, account: Address) => {
     try {
         const walletClient = getWalletClient();
-        
-        
+
+
         if (listing.seller.toLowerCase() === account.toLowerCase()) {
             throw new Error('You cannot buy your own listing');
         }
-        
+
         await approveCUSD(marketplaceContractAddress, account, listing.price);
 
         console.log(`Buying token #${listing.tokenId}...`);
@@ -190,7 +191,7 @@ export const buyToken = async (listing: Listing, account: Address) => {
     } catch (error: any) {
         console.error('Failed to buy token:', error);
         const errorMessage = (error.shortMessage || error.message || '').toLowerCase();
-        
+
         if (errorMessage.includes('you cannot buy your own item')) {
             throw new Error('You cannot buy your own listing');
         } else if (errorMessage.includes('listing is not active')) {
@@ -226,7 +227,7 @@ export const cancelListing = async (listingId: string, account: Address) => {
     } catch (error: any) {
         console.error('Failed to cancel listing:', error);
         const errorMessage = (error.shortMessage || error.message || '').toLowerCase();
-        
+
         if (errorMessage.includes('you are not the seller')) {
             throw new Error('You are not the seller of this listing');
         } else if (errorMessage.includes('listing is not active')) {
@@ -242,11 +243,11 @@ export const cancelListing = async (listingId: string, account: Address) => {
 export const getActiveListings = async (): Promise<Listing[]> => {
     try {
         const listingCount = await publicClient.readContract({
-            address: marketplaceContractAddress,
-            abi: marketplaceContractAbi,
-            functionName: 'getListingCount',
-            authorizationList: [],
-        }) as bigint;
+address: marketplaceContractAddress,
+abi: marketplaceContractAbi,
+functionName: 'getListingCount',
+authorizationList: undefined
+}) as bigint;
 
         if (listingCount === 0n) return [];
 
@@ -256,25 +257,25 @@ export const getActiveListings = async (): Promise<Listing[]> => {
                 (async () => {
                     try {
                         const listingResult = await publicClient.readContract({
-                            address: marketplaceContractAddress,
-                            abi: marketplaceContractAbi,
-                            functionName: 'listings',
-                            args: [i],
-                            authorizationList: [],
-                        }) as readonly [bigint, `0x${string}`, bigint, `0x${string}`, bigint, boolean];
+address: marketplaceContractAddress,
+abi: marketplaceContractAbi,
+functionName: 'listings',
+args: [i],
+authorizationList: undefined
+}) as readonly [bigint, `0x${string}`, bigint, `0x${string}`, bigint, boolean];
 
                         const isActive = listingResult[5];
                         if (!isActive) return null;
 
                         const tokenId = listingResult[2].toString();
                         const nftAddress = listingResult[1];
-                        
+
                         const tokenUri = await publicClient.readContract({
                             address: nftAddress,
                             abi: impactTokenContractAbi,
                             functionName: 'tokenURI',
                             args: [BigInt(tokenId)],
-                            authorizationList: [],
+                            authorizationList: undefined
                         }) as string;
 
                         const base64String = tokenUri.split(',')[1];
@@ -282,7 +283,7 @@ export const getActiveListings = async (): Promise<Listing[]> => {
                             console.warn(`Invalid token URI format for token ${tokenId}`);
                             return null;
                         }
-                        
+
                         const metadataJson = decodeURIComponent(escape(atob(base64String)));
                         const metadata: TokenMetadata = JSON.parse(metadataJson);
 
@@ -309,7 +310,7 @@ export const getActiveListings = async (): Promise<Listing[]> => {
                 })()
             );
         }
-        
+
         const listings = await Promise.all(listingPromises);
         return listings.filter(l => l !== null) as Listing[];
 
