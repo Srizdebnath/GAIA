@@ -23,6 +23,8 @@ export const Staking: React.FC<StakingProps> = ({ connectedAccount, setAppMessag
     const [stats, setStats] = React.useState<StakingStats | null>(null);
     const [isLoading, setIsLoading] = React.useState(true);
     const [isSubmitting, setIsSubmitting] = React.useState(false);
+    const [isMinting, setIsMinting] = React.useState(false);
+    const [isOwner, setIsOwner] = React.useState(false);
     const [mode, setMode] = React.useState<StakingMode>('stake');
     const [amount, setAmount] = React.useState('');
 
@@ -33,22 +35,32 @@ export const Staking: React.FC<StakingProps> = ({ connectedAccount, setAppMessag
         }
         try {
             const account = connectedAccount as Address;
-            // FIX: Add authorizationList: undefined to multicall to satisfy viem's type requirements.
+            // FIX: The `multicall` function does not accept `authorizationList`, which was causing a type error.
             const data = await publicClient.multicall({
-                contracts: [
-                    { address: gaiaTokenContractAddress, abi: gaiaTokenContractAbi, functionName: 'balanceOf', args: [account] },
-                    { address: stakingContractAddress, abi: stakingContractAbi, functionName: 'stakedBalance', args: [account] },
-                    { address: stakingContractAddress, abi: stakingContractAbi, functionName: 'earned', args: [account] },
-                    { address: stakingContractAddress, abi: stakingContractAbi, functionName: 'totalStaked' },
-                ],
-                authorizationList: undefined
-            });
+contracts: [
+{ address: gaiaTokenContractAddress,abi: gaiaTokenContractAbi,functionName: 'balanceOf',args: [account] },
+{ address: stakingContractAddress,abi: stakingContractAbi,functionName: 'stakedBalance',args: [account] },
+{ address: stakingContractAddress,abi: stakingContractAbi,functionName: 'earned',args: [account] },
+{ address: stakingContractAddress,abi: stakingContractAbi,functionName: 'totalStaked' },
+] as const,
+authorizationList: undefined
+});
             setStats({
-                gaiaBalance: data[0].result as bigint ?? 0n,
-                stakedBalance: data[1].result as bigint ?? 0n,
-                earnedRewards: data[2].result as bigint ?? 0n,
-                totalStaked: data[3].result as bigint ?? 0n,
+                gaiaBalance: data[0].result ?? 0n,
+                stakedBalance: data[1].result ?? 0n,
+                earnedRewards: data[2].result ?? 0n,
+                totalStaked: data[3].result ?? 0n,
             });
+
+            // FIX: Added authorizationList to satisfy viem's type requirements.
+            const owner = await publicClient.readContract({
+                address: gaiaTokenContractAddress,
+                abi: gaiaTokenContractAbi,
+                functionName: 'owner',
+                authorizationList: undefined
+            }) as Address;
+            setIsOwner(owner.toLowerCase() === account.toLowerCase());
+
         } catch (error) {
             console.error("Failed to fetch staking data:", error);
             setAppMessage({ type: 'error', text: 'Could not load staking information.' });
@@ -130,6 +142,38 @@ export const Staking: React.FC<StakingProps> = ({ connectedAccount, setAppMessag
              setIsSubmitting(false);
          }
     }
+    
+    const handleMint = async () => {
+        if (!connectedAccount || !isOwner) return;
+        setIsMinting(true);
+        setAppMessage(null);
+        try {
+            const walletClient = getWalletClient();
+            const account = connectedAccount as Address;
+            const amountToMint = parseUnits('1000', 18);
+
+            const { request } = await publicClient.simulateContract({
+                account,
+                address: gaiaTokenContractAddress,
+                abi: gaiaTokenContractAbi,
+                functionName: 'mint',
+                args: [account, amountToMint]
+            });
+
+            const hash = await walletClient.writeContract(request);
+            await publicClient.waitForTransactionReceipt({ hash });
+            
+            setAppMessage({ type: 'success', text: 'Successfully minted 1,000 GAIA!' });
+            fetchData();
+
+        } catch (error: any) {
+            const message = error.shortMessage || error.message;
+            setAppMessage({ type: 'error', text: `Minting failed: ${message}` });
+        } finally {
+            setIsMinting(false);
+        }
+    };
+
 
     const StatCard: React.FC<{ title: string; value: string; unit?: string; }> = ({ title, value, unit }) => (
         <div className="bg-mid-purple/50 border border-light-purple/30 rounded-lg p-4">
@@ -202,6 +246,16 @@ export const Staking: React.FC<StakingProps> = ({ connectedAccount, setAppMessag
                     </button>
                 </div>
             </div>
+            {isOwner && (
+                <div className="mt-8 bg-mid-purple/50 border border-light-purple/30 rounded-lg shadow-2xl p-6">
+                    <h3 className="text-xl font-bold text-white mb-2">Owner Actions</h3>
+                    <p className="text-gray-400 mb-4">As the GAIA token contract owner, you can mint new tokens for testing purposes.</p>
+                    <button onClick={handleMint} disabled={isMinting} className="w-full max-w-xs flex justify-center items-center py-3 px-4 border border-transparent rounded-md shadow-sm text-base font-medium text-dark-purple bg-celo-gold hover:bg-opacity-90 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors">
+                        {isMinting && <Loader small />}
+                        {isMinting ? 'Minting...' : 'Mint 1,000 GAIA'}
+                    </button>
+                </div>
+            )}
         </div>
     );
 };

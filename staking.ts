@@ -1,7 +1,7 @@
 import { cUSDContractAddress } from './marketplace';
 import { gaiaTokenContractAddress } from './gaiaToken';
 
-export const stakingContractAddress: `0x${string}` = '0x09641215D34251877D25956020c242130707F95A'; // Placeholder
+export const stakingContractAddress: `0x${string}` = '0x76e57c0e94bd0482f370c32694c578952b44a6b9';
 
 // In a real scenario, this would be passed during deployment
 export const stakingConstructorArgs = [gaiaTokenContractAddress, cUSDContractAddress];
