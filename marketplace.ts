@@ -3,7 +3,9 @@ export const marketplaceContractAddress: `0x${string}` = '0x488c79821a52ef6607f3
 
 export const GAIA_TREASURY_ADDRESS: `0x${string}` = '0xBc670380edc8Ac07E91ca68cD6ac2Adf27881162';
 
-export const cUSDContractAddress: `0x${string}` = '0x765DE816845861e75A25fCA122bb6898B8B1282a';
+// Updated to the correct cUSD address for the Celo Sepolia testnet.
+// The previous address was for mainnet/alfajores and is not deployed on Sepolia.
+export const cUSDContractAddress: `0x${string}` = '0x2F36c84855361A825F885150241A3E25f8253106';
 
 export const cUSDContractAbi = [
   {"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},

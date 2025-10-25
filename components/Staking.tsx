@@ -35,31 +35,30 @@ export const Staking: React.FC<StakingProps> = ({ connectedAccount, setAppMessag
         }
         try {
             const account = connectedAccount as Address;
-            // FIX: The `multicall` function does not accept `authorizationList`, which was causing a type error.
-            const data = await publicClient.multicall({
-contracts: [
-{ address: gaiaTokenContractAddress,abi: gaiaTokenContractAbi,functionName: 'balanceOf',args: [account] },
-{ address: stakingContractAddress,abi: stakingContractAbi,functionName: 'stakedBalance',args: [account] },
-{ address: stakingContractAddress,abi: stakingContractAbi,functionName: 'earned',args: [account] },
-{ address: stakingContractAddress,abi: stakingContractAbi,functionName: 'totalStaked' },
-] as const,
-authorizationList: undefined
-});
+            
+            // Replaced multicall with individual calls for better robustness and error handling.
+            const [
+                gaiaBalance,
+                stakedBalance,
+                earnedRewards,
+                totalStaked,
+                owner
+            ] = await Promise.all([
+                publicClient.readContract({ address: gaiaTokenContractAddress, abi: gaiaTokenContractAbi, functionName: 'balanceOf', args: [account], authorizationList: undefined }),
+                publicClient.readContract({ address: stakingContractAddress, abi: stakingContractAbi, functionName: 'stakedBalance', args: [account], authorizationList: undefined }),
+                publicClient.readContract({ address: stakingContractAddress, abi: stakingContractAbi, functionName: 'earned', args: [account], authorizationList: undefined }),
+                publicClient.readContract({ address: stakingContractAddress, abi: stakingContractAbi, functionName: 'totalStaked', authorizationList: undefined }),
+                publicClient.readContract({ address: gaiaTokenContractAddress, abi: gaiaTokenContractAbi, functionName: 'owner', authorizationList: undefined })
+            ]);
+
             setStats({
-                gaiaBalance: data[0].result ?? 0n,
-                stakedBalance: data[1].result ?? 0n,
-                earnedRewards: data[2].result ?? 0n,
-                totalStaked: data[3].result ?? 0n,
+                gaiaBalance: (gaiaBalance as bigint) ?? 0n,
+                stakedBalance: (stakedBalance as bigint) ?? 0n,
+                earnedRewards: (earnedRewards as bigint) ?? 0n,
+                totalStaked: (totalStaked as bigint) ?? 0n,
             });
 
-            // FIX: Added authorizationList to satisfy viem's type requirements.
-            const owner = await publicClient.readContract({
-                address: gaiaTokenContractAddress,
-                abi: gaiaTokenContractAbi,
-                functionName: 'owner',
-                authorizationList: undefined
-            }) as Address;
-            setIsOwner(owner.toLowerCase() === account.toLowerCase());
+            setIsOwner((owner as Address).toLowerCase() === account.toLowerCase());
 
         } catch (error) {
             console.error("Failed to fetch staking data:", error);
@@ -93,7 +92,6 @@ authorizationList: undefined
                 if (amountWei > stats.gaiaBalance) {
                     throw new Error("Insufficient GAIA balance.");
                 }
-                // FIX: Add authorizationList: undefined to readContract to satisfy viem's type requirements.
                 const allowance = await publicClient.readContract({ address: gaiaTokenContractAddress, abi: gaiaTokenContractAbi, functionName: 'allowance', args: [account, stakingContractAddress], authorizationList: undefined });
                 if (allowance < amountWei) {
                     setAppMessage({type: 'success', text: 'Please approve the staking contract to spend your GAIA...'})
