@@ -28,36 +28,90 @@ export const validateMarketplaceConfig = (): { isValid: boolean; error?: string 
     return { isValid: true };
 };
 
-async function approveToken(spender: Address, contract: Address, abi: any, account: Address, tokenId: string) {
-    const walletClient = getWalletClient();
-    console.log(`Approving token ${tokenId} for spender ${spender}`);
+// Utility function to check if marketplace contract is deployed and accessible
+export const checkMarketplaceContract = async (): Promise<{ isAccessible: boolean; error?: string }> => {
+    try {
+        if (!isMarketplaceConfigured()) {
+            return {
+                isAccessible: false,
+                error: 'Marketplace contract address is not configured'
+            };
+        }
+        
+        // Try to read a simple function to check if contract is accessible
+        await publicClient.readContract({
+            address: marketplaceContractAddress,
+            abi: marketplaceContractAbi,
+            functionName: 'getListingCount',
+            authorizationList: [],
+        });
+        
+        return { isAccessible: true };
+    } catch (error: any) {
+        console.error('Marketplace contract check failed:', error);
+        return {
+            isAccessible: false,
+            error: `Marketplace contract is not accessible: ${error.shortMessage || error.message}`
+        };
+    }
+};
 
-    const { request } = await publicClient.simulateContract({
-        address: contract,
-        abi: abi,
-        functionName: 'approve',
-        args: [spender, BigInt(tokenId)],
-        account,
-    });
-    const hash = await walletClient.writeContract(request);
-    await publicClient.waitForTransactionReceipt({ hash });
-    console.log(`Token ${tokenId} approved.`);
+async function approveToken(spender: Address, contract: Address, abi: any, account: Address, tokenId: string) {
+    try {
+        const walletClient = getWalletClient();
+        console.log(`Approving token ${tokenId} for spender ${spender}`);
+
+        const { request } = await publicClient.simulateContract({
+            address: contract,
+            abi: abi,
+            functionName: 'approve',
+            args: [spender, BigInt(tokenId)],
+            account,
+        });
+        const hash = await walletClient.writeContract(request);
+        await publicClient.waitForTransactionReceipt({ hash });
+        console.log(`Token ${tokenId} approved.`);
+    } catch (error: any) {
+        console.error(`Failed to approve token ${tokenId}:`, error);
+        const errorMessage = (error.shortMessage || error.message || '').toLowerCase();
+        
+        if (errorMessage.includes('you are not the owner')) {
+            throw new Error('You are not the owner of this token');
+        } else if (errorMessage.includes('user rejected')) {
+            throw new Error('Token approval was rejected by the user');
+        } else {
+            throw new Error(`Token approval failed: ${error.shortMessage || error.message}`);
+        }
+    }
 }
 
 async function approveCUSD(spender: Address, account: Address, amount: bigint) {
-    const walletClient = getWalletClient();
-    console.log(`Approving ${formatUnits(amount, 18)} cUSD for spender ${spender}`);
+    try {
+        const walletClient = getWalletClient();
+        console.log(`Approving ${formatUnits(amount, 18)} cUSD for spender ${spender}`);
 
-    const { request } = await publicClient.simulateContract({
-        address: cUSDContractAddress,
-        abi: cUSDContractAbi,
-        functionName: 'approve',
-        args: [spender, amount],
-        account,
-    });
-    const hash = await walletClient.writeContract(request);
-    await publicClient.waitForTransactionReceipt({ hash });
-    console.log('cUSD approved.');
+        const { request } = await publicClient.simulateContract({
+            address: cUSDContractAddress,
+            abi: cUSDContractAbi,
+            functionName: 'approve',
+            args: [spender, amount],
+            account,
+        });
+        const hash = await walletClient.writeContract(request);
+        await publicClient.waitForTransactionReceipt({ hash });
+        console.log('cUSD approved.');
+    } catch (error: any) {
+        console.error('Failed to approve cUSD:', error);
+        const errorMessage = (error.shortMessage || error.message || '').toLowerCase();
+        
+        if (errorMessage.includes('insufficient funds')) {
+            throw new Error('Insufficient cUSD balance for approval');
+        } else if (errorMessage.includes('user rejected')) {
+            throw new Error('cUSD approval was rejected by the user');
+        } else {
+            throw new Error(`cUSD approval failed: ${error.shortMessage || error.message}`);
+        }
+    }
 }
 
 export const listToken = async (nftContractAddress: Address, tokenId: string, priceInCUSD: string, account: Address) => {
@@ -183,6 +237,7 @@ export const getActiveListings = async (): Promise<Listing[]> => {
             address: marketplaceContractAddress,
             abi: marketplaceContractAbi,
             functionName: 'getListingCount',
+            authorizationList: [],
         }) as bigint;
 
         if (listingCount === 0n) return [];
@@ -197,6 +252,7 @@ export const getActiveListings = async (): Promise<Listing[]> => {
                             abi: marketplaceContractAbi,
                             functionName: 'listings',
                             args: [i],
+                            authorizationList: [],
                         }) as readonly [bigint, `0x${string}`, bigint, `0x${string}`, bigint, boolean];
 
                         const isActive = listingResult[5];
@@ -210,6 +266,7 @@ export const getActiveListings = async (): Promise<Listing[]> => {
                             abi: impactTokenContractAbi,
                             functionName: 'tokenURI',
                             args: [BigInt(tokenId)],
+                            authorizationList: [],
                         }) as string;
 
                         // Decode base64 URI
