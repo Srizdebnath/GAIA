@@ -1,16 +1,21 @@
+/**
+ * TODO: IMPORTANT!
+ * DEPLOY THE SMART CONTRACT AND PASTE THE ADDRESS HERE.
+ * 
+ * Replace this placeholder address with the actual address of your deployed
+ * Marketplace smart contract on the Celo Sepolia Testnet.
+ * You can get this address after deploying the contract using Remix.
+ */
+export const marketplaceContractAddress: `0x${string}` = '0x0000000000000000000000000000000000000000';
 
 /**
- * NOTE: This is a placeholder address. You must deploy the Marketplace contract
- * (source code included below) and replace this address with your deployed
- * contract address on the Celo Sepolia Testnet.
+ * TODO: IMPORTANT!
+ * SET YOUR TREASURY WALLET ADDRESS HERE.
+ * 
+ * Replace this placeholder address with your own Celo Sepolia wallet address. 
+ * This is where the marketplace platform fees will be sent.
  */
-export const marketplaceContractAddress: `0x${string}` = '0x1234567890123456789012345678901234567890';
-
-/**
- * NOTE: This is a placeholder address. You should replace this with a secure
- * address that you control to receive platform fees.
- */
-export const GAIA_TREASURY_ADDRESS: `0x${string}` = '0x0987654321098765432109876543210987654321';
+export const GAIA_TREASURY_ADDRESS: `0x${string}` = '0x0000000000000000000000000000000000000000';
 
 export const cUSDContractAddress: `0x${string}` = '0x765DE816845861e75A25fCA122bb6898B8B1282a';
 
