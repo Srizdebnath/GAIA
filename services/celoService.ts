@@ -9,11 +9,6 @@ declare global {
   }
 }
 
-// FIX: Add `as const` to the end of the chain definition to ensure
-// TypeScript infers the most specific types for the chain properties,
-// which is crucial for viem's type inference to work correctly.
-// This resolves both the "Type instantiation is excessively deep" error
-// and the downstream "authorizationList is missing" errors.
 export const celoSepoliaTestnet = defineChain({
   id: 11142220,
   name: 'Celo Sepolia Testnet',
@@ -45,16 +40,16 @@ export const celoSepoliaTestnet = defineChain({
     },
   },
   testnet: true,
-} as const);
+});
 
-let walletClientInstance: WalletClient | null = null;
+let walletClientInstance: any = null;
 
 export const publicClient = createPublicClient({
   chain: celoSepoliaTestnet,
   transport: http()
 });
 
-export const getWalletClient = (): WalletClient => {
+export const getWalletClient = (): any => {
     if (!walletClientInstance) throw new Error("Wallet not connected. Please connect your wallet first.");
     return walletClientInstance;
 }
@@ -154,9 +149,6 @@ export const mintImpactToken = async (project: Project, analysis: AIAnalysisResu
         console.log('Transaction confirmed, receipt:', receipt);
 
         let tokenId = null;
-        // FIX: The previous log decoding implementation using `decodeEventLog` had type errors with viem's Log type.
-        // `parseEventLogs` is a safer and cleaner way to get typed event logs from a transaction receipt.
-        // It will only return logs that match the ABI and event name, avoiding the need for a try-catch block.
         const transferEvents = parseEventLogs({
             abi: contractAbi,
             logs: receipt.logs,
@@ -164,10 +156,9 @@ export const mintImpactToken = async (project: Project, analysis: AIAnalysisResu
         });
 
         for (const log of transferEvents) {
-            // Since we are filtering by eventName, we know `args` for the Transfer event will be present.
             if (log.args.to.toLowerCase() === recipientAddress.toLowerCase()) {
                 tokenId = log.args.tokenId.toString();
-                break; // Found the token minted to our recipient.
+                break; 
             }
         }
 

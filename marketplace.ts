@@ -1,21 +1,7 @@
 
-/**
- * TODO: IMPORTANT!
- * DEPLOY THE SMART CONTRACT AND PASTE THE ADDRESS HERE.
- * 
- * Replace this placeholder address with the actual address of your deployed
- * Marketplace smart contract on the Celo Sepolia Testnet.
- * You can get this address after deploying the contract using Remix.
- */
 export const marketplaceContractAddress: `0x${string}` = '0x46760acb536c8381106292d1e4ba512c7685ef68';
 
-/**
- * TODO: IMPORTANT!
- * SET YOUR TREASURY WALLET ADDRESS HERE.
- * 
- * Replace this placeholder address with your own Celo Sepolia wallet address. 
- * This is where the marketplace platform fees will be sent.
- */
+
 export const GAIA_TREASURY_ADDRESS: `0x${string}` = '0xBc670380edc8Ac07E91ca68cD6ac2Adf27881162';
 
 export const cUSDContractAddress: `0x${string}` = '0x765DE816845861e75A25fCA122bb6898B8B1282a';
@@ -51,19 +37,6 @@ export const marketplaceContractAbi = [
 ] as const;
 
 
-/**
- * Marketplace.sol
- *
- * This is the Solidity source code for the marketplace smart contract.
- * You can deploy this contract using tools like Remix, Hardhat, or Foundry.
- * After deployment, update the `marketplaceContractAddress` and `GAIA_TREASURY_ADDRESS`
- * constants at the top of this file.
- *
- * Constructor arguments for deployment:
- * 1. cUSD address: 0x765DE816845861e75A25fCA122bb6898B8B1282a (on Celo Sepolia)
- * 2. Initial Treasury Address: Your fee-collecting wallet address.
- * 3. Initial Fee (basis points): 250 (for 2.5%)
- */
 export const marketplaceSolidityCode = `
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
@@ -81,7 +54,7 @@ contract Marketplace is IERC721Receiver, ReentrancyGuard, Ownable {
         address nftAddress;
         uint256 tokenId;
         address payable seller;
-        uint256 price; // in cUSD
+        uint256 price; 
         bool active;
     }
 

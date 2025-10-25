@@ -4,12 +4,10 @@ import { marketplaceContractAddress, marketplaceContractAbi, cUSDContractAddress
 import { contractAddress as impactTokenContractAddress, contractAbi as impactTokenContractAbi } from '../contract';
 import type { Listing, TokenMetadata } from '../types';
 
-// Utility function to check if marketplace is properly configured
 export const isMarketplaceConfigured = (): boolean => {
-    return marketplaceContractAddress !== '0x0000000000000000000000000000000000000000';
+    return marketplaceContractAddress !== '0x46760acb536c8381106292d1e4ba512c7685ef68';
 };
 
-// Utility function to validate marketplace configuration
 export const validateMarketplaceConfig = (): { isValid: boolean; error?: string } => {
     if (!isMarketplaceConfigured()) {
         return {
@@ -28,7 +26,7 @@ export const validateMarketplaceConfig = (): { isValid: boolean; error?: string 
     return { isValid: true };
 };
 
-// Utility function to check if marketplace contract is deployed and accessible
+
 export const checkMarketplaceContract = async (): Promise<{ isAccessible: boolean; error?: string }> => {
     try {
         if (!isMarketplaceConfigured()) {
@@ -37,12 +35,12 @@ export const checkMarketplaceContract = async (): Promise<{ isAccessible: boolea
                 error: 'Marketplace contract address is not configured'
             };
         }
-        
-        // Try to read a simple function to check if contract is accessible
+
         await publicClient.readContract({
             address: marketplaceContractAddress,
             abi: marketplaceContractAbi,
             functionName: 'getListingCount',
+            authorizationList: [],
         });
         
         return { isAccessible: true };
@@ -65,6 +63,7 @@ async function approveMarketplaceForAll(spender: Address, contract: Address, abi
             abi: abi,
             functionName: 'isApprovedForAll',
             args: [account, spender],
+            authorizationList: [],
         });
 
         if (isApproved) {
@@ -129,7 +128,6 @@ export const listToken = async (nftContractAddress: Address, tokenId: string, pr
         const walletClient = getWalletClient();
         const priceInWei = parseUnits(priceInCUSD, 18);
 
-        // Validate inputs
         if (priceInWei <= 0n) {
             throw new Error('Price must be greater than zero');
         }
@@ -170,7 +168,7 @@ export const buyToken = async (listing: Listing, account: Address) => {
     try {
         const walletClient = getWalletClient();
         
-        // Check if user is trying to buy their own listing
+        
         if (listing.seller.toLowerCase() === account.toLowerCase()) {
             throw new Error('You cannot buy your own listing');
         }
@@ -247,6 +245,7 @@ export const getActiveListings = async (): Promise<Listing[]> => {
             address: marketplaceContractAddress,
             abi: marketplaceContractAbi,
             functionName: 'getListingCount',
+            authorizationList: [],
         }) as bigint;
 
         if (listingCount === 0n) return [];
@@ -261,6 +260,7 @@ export const getActiveListings = async (): Promise<Listing[]> => {
                             abi: marketplaceContractAbi,
                             functionName: 'listings',
                             args: [i],
+                            authorizationList: [],
                         }) as readonly [bigint, `0x${string}`, bigint, `0x${string}`, bigint, boolean];
 
                         const isActive = listingResult[5];
@@ -274,9 +274,9 @@ export const getActiveListings = async (): Promise<Listing[]> => {
                             abi: impactTokenContractAbi,
                             functionName: 'tokenURI',
                             args: [BigInt(tokenId)],
+                            authorizationList: [],
                         }) as string;
 
-                        // Decode base64 URI
                         const base64String = tokenUri.split(',')[1];
                         if (!base64String) {
                             console.warn(`Invalid token URI format for token ${tokenId}`);
@@ -315,7 +315,6 @@ export const getActiveListings = async (): Promise<Listing[]> => {
 
     } catch (error) {
         console.error("Failed to fetch active listings:", error);
-        // This can happen if the marketplace contract address is incorrect or not deployed.
         return [];
     }
 };

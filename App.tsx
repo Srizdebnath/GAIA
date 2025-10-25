@@ -30,7 +30,6 @@ const App: React.FC = () => {
       setConnectionError(null);
       const account = await connectWallet();
       setConnectedAccount(account);
-      // TODO: In a real app, you would fetch the user's tokens from the blockchain here.
     } catch (error) {
       console.error(error);
       setConnectionError((error as Error).message || 'Failed to connect wallet.');
@@ -82,11 +81,11 @@ const App: React.FC = () => {
     try {
       setAppMessage(null);
       await buyToken(listing, connectedAccount as `0x${string}`);
-      // This is a simplified state update. In a real app, you'd refetch listings and user's tokens.
+      
       const boughtToken: ImpactToken = {
         ...listing.tokenData,
         id: listing.tokenId,
-        transactionHash: '', // We don't have the original mint tx hash here
+        transactionHash: '', 
       };
       setMyTokens(prev => [...prev, boughtToken]);
       setView('myimpact');
