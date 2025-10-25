@@ -67,7 +67,7 @@ export const ImageUpload: React.FC<ImageUploadProps> = ({ label, onImageSelect }
       setPreview(URL.createObjectURL(file));
       setFileName(file.name);
       try {
-        const compressedData = await compressImage(file, 800, 0.8); // Resize to max 800px and 80% JPEG quality
+        const compressedData = await compressImage(file, 600, 0.7); // Resize to max 600px and 70% JPEG quality
         onImageSelect({ file, ...compressedData });
       } catch (error) {
         console.error("Image compression failed:", error);

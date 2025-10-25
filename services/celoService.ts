@@ -104,6 +104,11 @@ export const mintImpactToken = async (project: Project, analysis: AIAnalysisResu
         
         console.log('Starting minting process...');
         
+        const MAX_ANALYSIS_LENGTH = 1000;
+        const truncatedAnalysis = analysis.analysis.length > MAX_ANALYSIS_LENGTH 
+            ? analysis.analysis.substring(0, MAX_ANALYSIS_LENGTH - 3) + '...' 
+            : analysis.analysis;
+
         const metadata = {
             name: `${project.name} - GAIA Impact Token`,
             description: project.description,
@@ -111,7 +116,7 @@ export const mintImpactToken = async (project: Project, analysis: AIAnalysisResu
             attributes: [
                 { trait_type: "Impact Score", value: analysis.score },
                 { trait_type: "Location", value: project.location },
-                { trait_type: "AI Analysis", value: analysis.analysis }, 
+                { trait_type: "AI Analysis", value: truncatedAnalysis }, 
             ]
         };
        
@@ -169,19 +174,23 @@ export const mintImpactToken = async (project: Project, analysis: AIAnalysisResu
     } catch (error: any) {
         console.error('Minting failed with detailed error:', error);
         
-        if (error.message.includes('HTTP request failed')) {
-            throw new Error('Network connection failed. Please check your internet connection and try again. If the problem persists, the Celo network might be experiencing issues.');
-        } else if (error.message.includes('insufficient funds')) {
+        // Viem errors often have a cleaner `shortMessage`.
+        const errorMessage = (error.shortMessage || error.message || '').toLowerCase();
+
+        if (errorMessage.includes('http') || errorMessage.includes('content too large') || errorMessage.includes('413') || errorMessage.includes('size') || errorMessage.includes('missing or invalid parameters')) {
+            throw new Error('Transaction data is too large for the network node. This is likely due to a large image file. The app has compressed it, but it may still be too large for current network conditions.');
+        } else if (errorMessage.includes('insufficient funds')) {
             throw new Error('Insufficient CELO balance to cover transaction fees. Please add more CELO to your wallet.');
-        } else if (error.message.includes('User rejected the request')) {
-            throw new Error('Transaction was rejected by user.');
-        } else if (error.message.includes('execution reverted')) {
-             if (error.message.includes("Ownable: caller is not the owner")) {
+        } else if (errorMessage.includes('user rejected the request')) {
+            throw new Error('Transaction was rejected by the user.');
+        } else if (errorMessage.includes('execution reverted')) {
+             if (errorMessage.includes("ownable: caller is not the owner")) {
                 throw new Error("Minting failed: Only the contract owner can mint new tokens.");
              }
             throw new Error('Smart contract execution failed. This might be due to contract issues or invalid parameters.');
         } else {
-            throw new Error(`Minting failed: ${error.message}`);
+            // Use the cleaner short message if available
+            throw new Error(`Minting failed: ${error.shortMessage || error.message}`);
         }
     }
 };
