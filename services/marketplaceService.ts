@@ -56,31 +56,43 @@ export const checkMarketplaceContract = async (): Promise<{ isAccessible: boolea
     }
 };
 
-async function approveToken(spender: Address, contract: Address, abi: any, account: Address, tokenId: string) {
+async function approveMarketplaceForAll(spender: Address, contract: Address, abi: any, account: Address) {
     try {
         const walletClient = getWalletClient();
-        console.log(`Approving token ${tokenId} for spender ${spender}`);
+        console.log(`Checking approval status for marketplace ${spender} on contract ${contract} for account ${account}`);
+        
+        const isApproved = await publicClient.readContract({
+            address: contract,
+            abi: abi,
+            functionName: 'isApprovedForAll',
+            args: [account, spender],
+            authorizationList: [],
+        });
 
+        if (isApproved) {
+            console.log('Marketplace is already approved for all tokens.');
+            return;
+        }
+
+        console.log('Approving marketplace for all tokens...');
         const { request } = await publicClient.simulateContract({
             address: contract,
             abi: abi,
-            functionName: 'approve',
-            args: [spender, BigInt(tokenId)],
+            functionName: 'setApprovalForAll',
+            args: [spender, true],
             account,
         });
         const hash = await walletClient.writeContract(request);
         await publicClient.waitForTransactionReceipt({ hash });
-        console.log(`Token ${tokenId} approved.`);
+        console.log('Marketplace approved for all tokens.');
     } catch (error: any) {
-        console.error(`Failed to approve token ${tokenId}:`, error);
+        console.error('Failed to approve marketplace:', error);
         const errorMessage = (error.shortMessage || error.message || '').toLowerCase();
         
-        if (errorMessage.includes('you are not the owner')) {
-            throw new Error('You are not the owner of this token');
-        } else if (errorMessage.includes('user rejected')) {
-            throw new Error('Token approval was rejected by the user');
+        if (errorMessage.includes('user rejected')) {
+            throw new Error('Marketplace approval was rejected by the user');
         } else {
-            throw new Error(`Token approval failed: ${error.shortMessage || error.message}`);
+            throw new Error(`Marketplace approval failed: ${error.shortMessage || error.message}`);
         }
     }
 }
@@ -124,7 +136,7 @@ export const listToken = async (nftContractAddress: Address, tokenId: string, pr
             throw new Error('Price must be greater than zero');
         }
 
-        await approveToken(marketplaceContractAddress, nftContractAddress, impactTokenContractAbi, account, tokenId);
+        await approveMarketplaceForAll(marketplaceContractAddress, nftContractAddress, impactTokenContractAbi, account);
 
         console.log('Listing token...');
         const { request } = await publicClient.simulateContract({

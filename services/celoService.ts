@@ -1,5 +1,5 @@
 
-import { createWalletClient, custom, createPublicClient, http, defineChain, decodeEventLog, type Address, type WalletClient } from 'viem';
+import { createWalletClient, custom, createPublicClient, http, defineChain, parseEventLogs, type Address, type WalletClient } from 'viem';
 import { contractAddress, contractAbi } from '../contract';
 import type { Project, AIAnalysisResult } from '../types';
 
@@ -149,22 +149,20 @@ export const mintImpactToken = async (project: Project, analysis: AIAnalysisResu
         console.log('Transaction confirmed, receipt:', receipt);
 
         let tokenId = null;
-        for (const log of receipt.logs) {
-            try {
-                const decodedLog = decodeEventLog({
-                    abi: contractAbi,
-                    data: log.data,
-                    topics: log.topics,
-                });
-                if (decodedLog.eventName === 'Transfer') {
-                    const args = decodedLog.args as { from: Address, to: Address, tokenId: bigint };
-                    if (args.to.toLowerCase() === recipientAddress.toLowerCase()) {
-                        tokenId = args.tokenId.toString();
-                        break;
-                    }
-                }
-            } catch (e) {
-                // Not a Transfer event from our contract, ignore.
+        // FIX: The previous log decoding implementation using `decodeEventLog` had type errors with viem's Log type.
+        // `parseEventLogs` is a safer and cleaner way to get typed event logs from a transaction receipt.
+        // It will only return logs that match the ABI and event name, avoiding the need for a try-catch block.
+        const transferEvents = parseEventLogs({
+            abi: contractAbi,
+            logs: receipt.logs,
+            eventName: 'Transfer',
+        });
+
+        for (const log of transferEvents) {
+            // Since we are filtering by eventName, we know `args` for the Transfer event will be present.
+            if (log.args.to.toLowerCase() === recipientAddress.toLowerCase()) {
+                tokenId = log.args.tokenId.toString();
+                break; // Found the token minted to our recipient.
             }
         }
 
