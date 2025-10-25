@@ -1,3 +1,4 @@
+
 /**
  * TODO: IMPORTANT!
  * DEPLOY THE SMART CONTRACT AND PASTE THE ADDRESS HERE.
@@ -22,7 +23,7 @@ export const cUSDContractAddress: `0x${string}` = '0x765DE816845861e75A25fCA122b
 export const cUSDContractAbi = [
   {"constant":false,"inputs":[{"name":"_spender","type":"address"},{"name":"_value","type":"uint256"}],"name":"approve","outputs":[{"name":"","type":"bool"}],"payable":false,"stateMutability":"nonpayable","type":"function"},
   {"constant":true,"inputs":[{"name":"_owner","type":"address"},{"name":"_spender","type":"address"}],"name":"allowance","outputs":[{"name":"","type":"uint256"}],"payable":false,"stateMutability":"view","type":"function"},
-];
+] as const;
 
 export const marketplaceContractAbi = [
   {"inputs":[{"internalType":"address","name":"_cUSDAddress","type":"address"},{"internalType":"address","name":"_initialTreasury","type":"address"},{"internalType":"uint256","name":"_initialFee","type":"uint256"}],"stateMutability":"nonpayable","type":"constructor"},
@@ -40,7 +41,6 @@ export const marketplaceContractAbi = [
   {"inputs":[],"name":"getListingCount","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
   {"inputs":[{"internalType":"address","name":"_nftAddress","type":"address"},{"internalType":"uint256","name":"_tokenId","type":"uint256"},{"internalType":"uint256","name":"_price","type":"uint256"}],"name":"listItem","outputs":[],"stateMutability":"nonpayable","type":"function"},
   {"inputs":[{"internalType":"uint256","name":"","type":"uint256"}],"name":"listings","outputs":[{"internalType":"uint256","name":"listingId","type":"uint256"},{"internalType":"address","name":"nftAddress","type":"address"},{"internalType":"uint256","name":"tokenId","type":"uint256"},{"internalType":"address payable","name":"seller","type":"address"},{"internalType":"uint256","name":"price","type":"uint256"},{"internalType":"bool","name":"active","type":"bool"}],"stateMutability":"view","type":"function"},
-  {"inputs":[{"internalType":"address","name":"","type":"address"},{"internalType":"address","name":"","type":"address"},{"internalType":"uint256","name":"","type":"uint256"},{"internalType":"bytes","name":"","type":"bytes"}],"name":"onERC721Received","outputs":[{"internalType":"bytes4","name":"","type":"bytes4"}],"stateMutability":"pure","type":"function"},
   {"inputs":[],"name":"owner","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
   {"inputs":[],"name":"platformFeeBasisPoints","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},
   {"inputs":[],"name":"renounceOwnership","outputs":[],"stateMutability":"nonpayable","type":"function"},
@@ -48,7 +48,8 @@ export const marketplaceContractAbi = [
   {"inputs":[],"name":"treasuryAddress","outputs":[{"internalType":"address","name":"","type":"address"}],"stateMutability":"view","type":"function"},
   {"inputs":[{"internalType":"uint256","name":"_newFeeBasisPoints","type":"uint256"}],"name":"updatePlatformFee","outputs":[],"stateMutability":"nonpayable","type":"function"},
   {"inputs":[{"internalType":"address","name":"_newTreasury","type":"address"}],"name":"updateTreasury","outputs":[],"stateMutability":"nonpayable","type":"function"}
-];
+] as const;
+
 
 /**
  * Marketplace.sol
@@ -69,12 +70,10 @@ pragma solidity ^0.8.20;
 
 import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.0.1/contracts/token/ERC721/IERC721.sol";
 import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.0.1/contracts/token/ERC20/IERC20.sol";
-import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.0.1/contracts/token/ERC721/IERC721Receiver.sol";
 import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.0.1/contracts/security/ReentrancyGuard.sol";
 import "https://github.com/OpenZeppelin/openzeppelin-contracts/blob/v5.0.1/contracts/access/Ownable.sol";
 
-
-contract Marketplace is IERC721Receiver, ReentrancyGuard, Ownable {
+contract Marketplace is ReentrancyGuard, Ownable {
     struct Listing {
         uint256 listingId;
         address nftAddress;
@@ -129,9 +128,7 @@ contract Marketplace is IERC721Receiver, ReentrancyGuard, Ownable {
         require(_price > 0, "Marketplace: Price must be greater than zero");
         IERC721 nft = IERC721(_nftAddress);
         require(nft.ownerOf(_tokenId) == msg.sender, "Marketplace: You are not the owner of this NFT");
-
-        // Transfer NFT to this contract for escrow
-        nft.safeTransferFrom(msg.sender, address(this), _tokenId);
+        require(nft.getApproved(_tokenId) == address(this), "Marketplace: Contract not approved for this token");
         
         uint256 listingId = _listingCounter;
         listings[listingId] = Listing({
@@ -151,27 +148,25 @@ contract Marketplace is IERC721Receiver, ReentrancyGuard, Ownable {
     function buyItem(uint256 _listingId) external nonReentrant {
         Listing storage listing = listings[_listingId];
         require(listing.active, "Marketplace: Listing is not active");
+        
+        IERC721 nft = IERC721(listing.nftAddress);
+        require(nft.ownerOf(listing.tokenId) == listing.seller, "Marketplace: Seller no longer owns this NFT");
         require(listing.seller != msg.sender, "Marketplace: You cannot buy your own item");
 
         uint256 price = listing.price;
         uint256 platformFee = (price * platformFeeBasisPoints) / 10000;
         uint256 sellerProceeds = price - platformFee;
         
-        // Transfer cUSD from buyer to this contract
-        require(cUSD.transferFrom(msg.sender, address(this), price), "Marketplace: cUSD transfer failed");
-        
-        // Pay platform fee
-        if(platformFee > 0) {
-            require(cUSD.transfer(treasuryAddress, platformFee), "Marketplace: Fee transfer failed");
-        }
-
-        // Pay seller
-        require(cUSD.transfer(listing.seller, sellerProceeds), "Marketplace: Seller payment failed");
-        
         listing.active = false;
 
-        // Transfer NFT to buyer
-        IERC721(listing.nftAddress).safeTransferFrom(address(this), msg.sender, listing.tokenId);
+        // Transfer cUSD from buyer to seller and treasury using buyer's allowance
+        require(cUSD.transferFrom(msg.sender, listing.seller, sellerProceeds), "Marketplace: Seller payment failed");
+        if (platformFee > 0) {
+            require(cUSD.transferFrom(msg.sender, treasuryAddress, platformFee), "Marketplace: Fee transfer failed");
+        }
+
+        // Transfer NFT from seller to buyer, using the approval given at listing time
+        nft.transferFrom(listing.seller, msg.sender, listing.tokenId);
         
         emit ItemSold(_listingId, listing.nftAddress, listing.tokenId, listing.seller, msg.sender, price);
     }
@@ -182,9 +177,6 @@ contract Marketplace is IERC721Receiver, ReentrancyGuard, Ownable {
         require(listing.seller == msg.sender, "Marketplace: You are not the seller");
         
         listing.active = false;
-
-        // Return NFT to seller
-        IERC721(listing.nftAddress).safeTransferFrom(address(this), msg.sender, listing.tokenId);
         
         emit ItemCancelled(_listingId, listing.nftAddress, listing.tokenId, msg.sender);
     }
@@ -203,15 +195,6 @@ contract Marketplace is IERC721Receiver, ReentrancyGuard, Ownable {
         require(_newTreasury != address(0), "Marketplace: Zero address");
         treasuryAddress = _newTreasury;
         emit TreasuryUpdated(_newTreasury);
-    }
-
-    function onERC721Received(
-        address,
-        address,
-        uint256,
-        bytes memory
-    ) public pure override returns (bytes4) {
-        return this.onERC721Received.selector;
     }
 }
 `;
