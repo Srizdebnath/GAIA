@@ -1,4 +1,3 @@
-
 import * as React from 'react';
 import type { Project } from '../types';
 import { ImageUpload } from './ImageUpload';
@@ -12,8 +11,8 @@ export const ProjectRegistration: React.FC<ProjectRegistrationProps> = ({ onSubm
   const [name, setName] = React.useState('');
   const [location, setLocation] = React.useState('');
   const [description, setDescription] = React.useState('');
-  const [beforeImage, setBeforeImage] = React.useState<{ file: File; base64: string } | null>(null);
-  const [afterImage, setAfterImage] = React.useState<{ file: File; base64: string } | null>(null);
+  const [beforeImage, setBeforeImage] = React.useState<{ file: File; base64: string; mimeType: string; } | null>(null);
+  const [afterImage, setAfterImage] = React.useState<{ file: File; base64: string; mimeType: string; } | null>(null);
   const [error, setError] = React.useState('');
 
   const isFormValid = name && location && description && beforeImage && afterImage;

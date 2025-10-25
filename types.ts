@@ -1,4 +1,3 @@
-
 export interface Project {
   name: string;
   location: string;
@@ -6,10 +5,12 @@ export interface Project {
   beforeImage: {
     file: File;
     base64: string;
+    mimeType: string;
   };
   afterImage: {
     file: File;
     base64: string;
+    mimeType: string;
   };
 }
 

@@ -1,4 +1,3 @@
-
 import { createWalletClient, custom, createPublicClient, http, defineChain, decodeEventLog, type Address, type WalletClient } from 'viem';
 import { contractAddress, contractAbi } from '../contract';
 import type { Project, AIAnalysisResult } from '../types';
@@ -108,7 +107,7 @@ export const mintImpactToken = async (project: Project, analysis: AIAnalysisResu
         const metadata = {
             name: `${project.name} - GAIA Impact Token`,
             description: project.description,
-            image: `data:${project.afterImage.file.type};base64,${project.afterImage.base64}`,
+            image: `data:${project.afterImage.mimeType};base64,${project.afterImage.base64}`,
             attributes: [
                 { trait_type: "Impact Score", value: analysis.score },
                 { trait_type: "Location", value: project.location },
