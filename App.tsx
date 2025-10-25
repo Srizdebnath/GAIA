@@ -9,8 +9,9 @@ import { MyImpact } from './components/MyImpact';
 
 import type { Project, ImpactToken, Listing } from './types';
 import { connectWallet } from './services/celoService';
-import { listToken, buyToken, cancelListing } from './services/marketplaceService';
+import { listToken, buyToken } from './services/marketplaceService';
 import { contractAddress as impactTokenContractAddress } from './contract';
+import { marketplaceContractAddress } from './marketplace';
 
 type View = 'register' | 'analyze' | 'gallery' | 'marketplace' | 'myimpact';
 
@@ -23,6 +24,8 @@ const App: React.FC = () => {
   const [connectionError, setConnectionError] = React.useState<string | null>(null);
   const [appMessage, setAppMessage] = React.useState<{type: 'success' | 'error', text: string} | null>(null);
 
+  const isMarketplaceConfigured = marketplaceContractAddress !== '0x0000000000000000000000000000000000000000';
+  const marketplaceNotConfiguredError = 'Marketplace is not configured. The developer needs to deploy the contract and update its address in the marketplace.ts file.';
 
   const handleConnectWallet = React.useCallback(async () => {
     try {
@@ -56,10 +59,14 @@ const App: React.FC = () => {
   }, []);
 
   const handleListToken = async (token: ImpactToken, price: string) => {
+    if (!isMarketplaceConfigured) {
+      setAppMessage({ type: 'error', text: marketplaceNotConfiguredError });
+      return;
+    }
     if (!connectedAccount) return;
     try {
       setAppMessage(null);
-      await listToken(impactTokenContractAddress, token.id, price, connectedAccount);
+      await listToken(impactTokenContractAddress, token.id, price, connectedAccount as `0x${string}`);
       setMyTokens(myTokens.filter(t => t.id !== token.id));
       setAppMessage({ type: 'success', text: `Token #${token.id} listed for sale successfully!` });
     } catch (error) {
@@ -69,10 +76,14 @@ const App: React.FC = () => {
   };
 
   const handleBuyToken = async (listing: Listing) => {
+    if (!isMarketplaceConfigured) {
+      setAppMessage({ type: 'error', text: marketplaceNotConfiguredError });
+      return;
+    }
     if (!connectedAccount) return;
     try {
       setAppMessage(null);
-      await buyToken(listing, connectedAccount);
+      await buyToken(listing, connectedAccount as `0x${string}`);
       // This is a simplified state update. In a real app, you'd refetch listings and user's tokens.
       const boughtToken: ImpactToken = {
         ...listing.tokenData,

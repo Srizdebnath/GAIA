@@ -4,13 +4,15 @@ import type { Listing } from '../types';
 import { getActiveListings } from '../services/marketplaceService';
 import { Loader } from './Loader';
 import { formatUnits } from 'viem';
+import { marketplaceContractAddress } from '../marketplace';
 
 interface MarketplaceProps {
   onBuyToken: (listing: Listing) => void;
   connectedAccount: string | null;
 }
 
-const ListingCard: React.FC<{ listing: Listing; onBuy: () => void; isOwner: boolean }> = ({ listing, onBuy, isOwner }) => (
+// FIX: Added `connectedAccount` to props to resolve scope error.
+const ListingCard: React.FC<{ listing: Listing; onBuy: () => void; isOwner: boolean; connectedAccount: string | null; }> = ({ listing, onBuy, isOwner, connectedAccount }) => (
     <div className="bg-mid-purple/50 border border-light-purple/30 rounded-lg shadow-lg overflow-hidden transform hover:-translate-y-1 transition-transform duration-300 flex flex-col">
         <img src={listing.tokenData.imageUrl} alt={listing.tokenData.projectName} className="w-full h-48 object-cover" />
         <div className="p-4 flex flex-col flex-grow">
@@ -29,7 +31,7 @@ const ListingCard: React.FC<{ listing: Listing; onBuy: () => void; isOwner: bool
                     </div>
                      <button 
                         onClick={onBuy}
-                        disabled={isOwner}
+                        disabled={isOwner || !connectedAccount}
                         className="px-4 py-2 text-sm font-bold text-dark-purple bg-celo-gold rounded-md hover:bg-opacity-90 disabled:bg-gray-600 disabled:cursor-not-allowed transition-colors"
                      >
                         {isOwner ? "Your Listing" : "Buy"}
@@ -46,9 +48,16 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ onBuyToken, connectedA
   const [listings, setListings] = React.useState<Listing[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
+  
+  const isMarketplaceConfigured = marketplaceContractAddress !== '0x0000000000000000000000000000000000000000';
 
   React.useEffect(() => {
     const fetchListings = async () => {
+      if (!isMarketplaceConfigured) {
+        setError('The marketplace contract has not been configured. Please deploy the contract and update the address in `marketplace.ts`.');
+        setIsLoading(false);
+        return;
+      }
       try {
         setIsLoading(true);
         setError(null);
@@ -62,7 +71,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ onBuyToken, connectedA
       }
     };
     fetchListings();
-  }, []);
+  }, [isMarketplaceConfigured]);
 
   return (
     <div className="max-w-6xl mx-auto">
@@ -72,7 +81,10 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ onBuyToken, connectedA
       </div>
 
       {isLoading && <Loader text="Loading marketplace listings..." />}
-      {error && <p className="text-center text-red-400">Error loading listings: {error}</p>}
+      {error && <div className="text-center text-yellow-300 bg-yellow-900/50 border border-yellow-500 p-8 rounded-lg">
+          <h2 className="text-2xl font-bold mb-4">Marketplace Notice</h2>
+          <p className="break-words">{error}</p>
+        </div>}
 
       {!isLoading && !error && listings.length === 0 && (
         <div className="text-center bg-mid-purple/50 p-12 rounded-lg">
@@ -81,7 +93,7 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ onBuyToken, connectedA
         </div>
       )}
       
-      {!isLoading && listings.length > 0 && (
+      {!isLoading && !error && listings.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
           {listings.map(listing => (
             <ListingCard 
@@ -89,6 +101,8 @@ export const Marketplace: React.FC<MarketplaceProps> = ({ onBuyToken, connectedA
               listing={listing} 
               onBuy={() => onBuyToken(listing)}
               isOwner={!!connectedAccount && listing.seller.toLowerCase() === connectedAccount.toLowerCase()}
+              // FIX: Pass `connectedAccount` prop to `ListingCard`.
+              connectedAccount={connectedAccount}
             />
           ))}
         </div>

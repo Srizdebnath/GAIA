@@ -1,3 +1,4 @@
+
 import { createWalletClient, custom, createPublicClient, http, defineChain, decodeEventLog, type Address, type WalletClient } from 'viem';
 import { contractAddress, contractAbi } from '../contract';
 import type { Project, AIAnalysisResult } from '../types';
@@ -105,13 +106,19 @@ export const mintImpactToken = async (project: Project, analysis: AIAnalysisResu
         console.log('Starting minting process...');
         
         const MAX_ANALYSIS_LENGTH = 1000;
+        const MAX_DESC_LENGTH = 500;
+
         const truncatedAnalysis = analysis.analysis.length > MAX_ANALYSIS_LENGTH 
             ? analysis.analysis.substring(0, MAX_ANALYSIS_LENGTH - 3) + '...' 
             : analysis.analysis;
 
+        const truncatedDescription = project.description.length > MAX_DESC_LENGTH
+            ? project.description.substring(0, MAX_DESC_LENGTH - 3) + '...'
+            : project.description;
+
         const metadata = {
             name: `${project.name} - GAIA Impact Token`,
-            description: project.description,
+            description: truncatedDescription,
             image: `data:${project.afterImage.mimeType};base64,${project.afterImage.base64}`,
             attributes: [
                 { trait_type: "Impact Score", value: analysis.score },
@@ -174,11 +181,10 @@ export const mintImpactToken = async (project: Project, analysis: AIAnalysisResu
     } catch (error: any) {
         console.error('Minting failed with detailed error:', error);
         
-        // Viem errors often have a cleaner `shortMessage`.
         const errorMessage = (error.shortMessage || error.message || '').toLowerCase();
 
         if (errorMessage.includes('http') || errorMessage.includes('content too large') || errorMessage.includes('413') || errorMessage.includes('size') || errorMessage.includes('missing or invalid parameters')) {
-            throw new Error('Transaction data is too large for the network node. This is likely due to a large image file. The app has compressed it, but it may still be too large for current network conditions.');
+            throw new Error('Minting failed because the transaction data is too large. This is usually caused by a very detailed image. Please try again with a different or simpler "After Project" image.');
         } else if (errorMessage.includes('insufficient funds')) {
             throw new Error('Insufficient CELO balance to cover transaction fees. Please add more CELO to your wallet.');
         } else if (errorMessage.includes('user rejected the request')) {
@@ -189,7 +195,6 @@ export const mintImpactToken = async (project: Project, analysis: AIAnalysisResu
              }
             throw new Error('Smart contract execution failed. This might be due to contract issues or invalid parameters.');
         } else {
-            // Use the cleaner short message if available
             throw new Error(`Minting failed: ${error.shortMessage || error.message}`);
         }
     }
