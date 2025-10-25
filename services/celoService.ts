@@ -105,8 +105,8 @@ export const mintImpactToken = async (project: Project, analysis: AIAnalysisResu
         
         console.log('Starting minting process...');
         
-        const MAX_ANALYSIS_LENGTH = 1000;
-        const MAX_DESC_LENGTH = 500;
+        const MAX_ANALYSIS_LENGTH = 500;
+        const MAX_DESC_LENGTH = 250;
 
         const truncatedAnalysis = analysis.analysis.length > MAX_ANALYSIS_LENGTH 
             ? analysis.analysis.substring(0, MAX_ANALYSIS_LENGTH - 3) + '...' 
