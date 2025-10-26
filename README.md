@@ -6,11 +6,10 @@
 
 ## Deployed Application
 
-[Access the Varidian Protocol Platform](https://varidianprotocol.netlify.app)
-[Click Me to get all links related to this project](https://docs.google.com/document/d/1LuYEuGLsqhMTdp9Ba1hmbr5spHdEZ-tK9pxYsDLjaYo/edit?usp=sharing)
-[Demo Video Link (Youtube)](https://youtu.be/Bf5u_bUkoYM)
-[Detailed Presentation Link](https://docs.google.com/presentation/d/1sZJPCdeOKFFwIv_YenKzDnO3WIzv6Yf6GnBGd9Kxm-w/edit?usp=sharing)
-
+- [Varidian Protocol Platform](https://varidianprotocol.netlify.app)
+- [Project Resource Links (Doc)](https://docs.google.com/document/d/1LuYEuGLsqhMTdp9Ba1hmbr5spHdEZ-tK9pxYsDLjaYo/edit?usp=sharing)
+- [Demo Video (YouTube)](https://youtu.be/Bf5u_bUkoYM)
+- [Detailed Presentation (Google Slides)](https://docs.google.com/presentation/d/1sZJPCdeOKFFwIv_YenKzDnO3WIzv6Yf6GnBGd9Kxm-w/edit?usp=sharing)
 
 
 
