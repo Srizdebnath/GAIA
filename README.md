@@ -3,6 +3,14 @@
 
 **A decentralized platform on the Celo blockchain that uses Artificial Intelligence to verify, tokenize, and trade real-world ecological impact.**
 
+
+## Deployed Application
+
+[Access the Varidian Protocol Platform](https://varidianprotocol.netlify.app)
+
+
+
+
 ---
 
 <p align="center">
