@@ -5,7 +5,48 @@
 
 ---
 
-![The Varidian Protocol Screenshot](varidian.png)
+<p align="center">
+  <img src="varidian.png" alt="The Varidian Protocol Screenshot"/><br>
+  <b>The Varidian Protocol: Application Dashboard</b>
+</p>
+<p align="center">
+  <img src="01.png" alt="AI Analysing Ecological Impact"/><br>
+  <b>AI Analysing Submitted Satellite Imagery for Ecological Impact</b>
+</p>
+<p align="center">
+  <img src="02.png" alt="AI Impact Analysis Score Using GEMINI-2.5-FLASH"/><br>
+  <b>Impact Analysis Score via GEMINI-2.5-FLASH</b>
+</p>
+<p align="center">
+  <img src="03.png" alt="Mint Token asking for Transaction Approve"/><br>
+  <b>Minting Impact Token: Requesting Transaction Approval</b>
+</p>
+<p align="center">
+  <img src="04.png" alt="Token Minted Successfully"/><br>
+  <b>Token Minted Successfully</b>
+</p>
+<p align="center">
+  <img src="05.png" alt="List for sale the Impact Token"/><br>
+  <b>List Impact Token for Sale on the Marketplace</b>
+</p>
+<p align="center">
+  <img src="06.png" alt="Listing is asking for transaction approval"/><br>
+  <b>Approval Request for Listing Token</b>
+</p>
+<p align="center">
+  <img src="Staking.png" alt="Users can stake Celo for our Native VARIDIAN Token"/><br>
+  <b>Stake Celo to Earn Native VARIDIAN Tokens</b>
+</p>
+<p align="center">
+  <img src="07.png" alt="Asking for Transaction Approval while Staking"/><br>
+  <b>Transaction Approval for Staking</b>
+</p>
+<p align="center">
+  <img src="08.png" alt="Staking Successful"/><br>
+  <b>Staking Successful</b>
+</p>
+
+
 
 ## Table of Contents
 
