@@ -12,6 +12,19 @@
 - [Detailed Presentation (Google Slides)](https://docs.google.com/presentation/d/1sZJPCdeOKFFwIv_YenKzDnO3WIzv6Yf6GnBGd9Kxm-w/edit?usp=sharing)
 
 
+## Smart Contracts on Celo Sepolia
+
+The backbone of the Varidian Protocol is a suite of four interconnected smart contracts deployed on the Celo Sepolia testnet:
+
+-   **ImpactToken (ERC-721):** The core NFT representing the proof of impact.
+    -   Address: [`0xd3b07a0b6cf6fd0854a0d039257bf67ccaa2da4a`](https://celo-sepolia.blockscout.com/address/0xd3B07a0B6CF6fD0854a0D039257bf67ccAa2DA4A)
+-   **VaridianToken (ERC-20):** The governance and utility token.
+    -   Address: [`0x646e5c61ec28f03b800447db10a1d0bbfe655b30`](https://celo-sepolia.blockscout.com/address/0x646E5c61EC28F03B800447dB10a1d0bBfe655B30)
+-   **Marketplace:** Handles the listing, buying, and selling logic.
+    -   Address: [`0x4a321e3190831a1639a5130ed5fd66155747b0c3`](https://celo-sepolia.blockscout.com/address/0x4a321e3190831A1639a5130Ed5fD66155747b0C3)
+-   **Staking:** Manages the staking of VARIDIAN tokens and distribution of cUSD rewards.
+    -   Address: [`0x8fffda79a30bc1115d625484a36bb1d407522a65`](https://celo-sepolia.blockscout.com/address/0x8FFfDA79A30bc1115D625484a36BB1d407522A65)
+
 
 ---
 
@@ -115,19 +128,6 @@ The current application is a fully functional demonstration of the Varidian Prot
 4.  **Mint:** The user reviews the AI's findings and signs a transaction to mint the Impact Token. The NFT's metadata is constructed and stored directly on the blockchain.
 5.  **Manage & Trade:** The new token appears in the user's "My Impact" portfolio and the public "Impact Gallery." The owner can then list it for sale on the marketplace for a price set in cUSD.
 6.  **Stake & Earn:** Any user can acquire `VARIDIAN` tokens (via the owner's minting function for this demo) and stake them in the staking contract to begin earning a passive yield in `cUSD`.
-
-## Smart Contracts on Celo Sepolia
-
-The backbone of the Varidian Protocol is a suite of four interconnected smart contracts deployed on the Celo Sepolia testnet:
-
--   **ImpactToken (ERC-721):** The core NFT representing the proof of impact.
-    -   Address: `0xd3b07a0b6cf6fd0854a0d039257bf67ccaa2da4a`
--   **VaridianToken (ERC-20):** The governance and utility token.
-    -   Address: `0x646e5c61ec28f03b800447db10a1d0bbfe655b30`
--   **Marketplace:** Handles the listing, buying, and selling logic.
-    -   Address: `0x4a321e3190831a1639a5130ed5fd66155747b0c3`
--   **Staking:** Manages the staking of VARIDIAN tokens and distribution of cUSD rewards.
-    -   Address: `0x8fffda79a30bc1115d625484a36bb1d407522a65`
 
 ## Future Scopes & Vision
 
